@@ -11,13 +11,13 @@ import optparse
 
 __version__ = '0.1'
 
-BADGE_HEIGHT = 55
-BADGE_WIDTH  = 85
+BADGE_HEIGHT = 66
+BADGE_WIDTH  = 96
 
 PAGE_HEIGHT = 297
 PAGE_WIDTH = 210
 
-INNER_MARGIN = 5
+INNER_MARGIN = 3
 
 TEXT_COLOR = (1, 1, 1)
 
@@ -28,7 +28,7 @@ def draw_text(ctx, pc, text, base_font_sz, y, text_width, text_height,
               area_width, multiline=False):
     font_sz = base_font_sz
     while font_sz > 6:
-        name_fd = pango.FontDescription("DejaVu")
+        name_fd = pango.FontDescription("Ubuntu")
         name_fd.set_size(font_sz * pango.SCALE)
         layout = pc.create_layout()
         layout.set_font_description(name_fd)
