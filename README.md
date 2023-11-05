@@ -1,8 +1,6 @@
-Pybadges
-========
+# pybadges
 
-What is this ?
---------------
+## What is this ?
 
 Just a very quick and dirty Python script to generate badges for
 conference attendees and speakers.
@@ -23,7 +21,7 @@ Typical usage:
 
     ./pybadges -i input.csv -o output.pdf -b background.png
 
-License
--------
+
+## License
 
 Licensed under the WTFPL license, http://sam.zoy.org/wtfpl/

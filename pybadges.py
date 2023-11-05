@@ -1,183 +1,246 @@
-#!/usr/bin/env python
+import csv
+import dataclasses
+import io
+import itertools
+from typing import Iterable
+from typing import Iterator
 
-# Licensed under the WTFPL license, http://sam.zoy.org/wtfpl/.
-
-import cairo
-import pango
-import pangocairo
-import os.path
-import sys
-import optparse
-
-__version__ = '0.1'
-
-BADGE_HEIGHT = 66
-BADGE_WIDTH  = 96
-
-PAGE_HEIGHT = 297
-PAGE_WIDTH = 210
-
-INNER_MARGIN = 3
-
-TEXT_COLOR = (1, 1, 1)
-
-def convert_mm_to_dots(mm):
-    return float(mm) / 25.4 * 72
-
-def draw_text(ctx, pc, text, base_font_sz, y, text_width, text_height,
-              area_width, multiline=False):
-    font_sz = base_font_sz
-    while font_sz > 6:
-        name_fd = pango.FontDescription("Ubuntu")
-        name_fd.set_size(font_sz * pango.SCALE)
-        layout = pc.create_layout()
-        layout.set_font_description(name_fd)
-        layout.set_text(text)
-        layout.set_alignment(pango.ALIGN_CENTER)
-        if multiline:
-            layout.set_width(int(convert_mm_to_dots(text_width) * pango.SCALE))
-
-        if layout.get_size()[0] > (convert_mm_to_dots(text_width) * pango.SCALE):
-            font_sz -= 1
-            continue
-
-        if layout.get_size()[1] > (convert_mm_to_dots(text_height) * pango.SCALE):
-            font_sz -= 1
-            continue
-
-        # draw
-        text_x, text_y, text_w, text_h = layout.get_extents()[1]
-        x = (convert_mm_to_dots(area_width) / 2) - (text_w/2.0)/pango.SCALE - int(float(text_x)/pango.SCALE)
-        y = y + (convert_mm_to_dots(text_height)/2) - (text_h/2.0)/pango.SCALE - int(float(text_y)/pango.SCALE)
-        ctx.move_to(x, y)
-        pc.show_layout(layout)
-        break
+from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
 
 
-def draw_badge(ctx, width, height, description, background_image):
-    im = cairo.ImageSurface.create_from_png(background_image)
+# TODO: softcode
+DPI = 72
 
-    ctx.save()
-    ctx.rectangle(0, 0, convert_mm_to_dots(width),
-                  convert_mm_to_dots(height))
-    ctx.scale(float(convert_mm_to_dots(width)) / im.get_width(),
-              float(convert_mm_to_dots(height)) / im.get_height())
-    ctx.set_source_surface(im)
-    ctx.fill()
-    ctx.restore()
 
-    ctx.set_source_rgb(0.9, 0.9, 0.9)
-    ctx.rectangle(0, 0, convert_mm_to_dots(width),
-                  convert_mm_to_dots(height))
-    ctx.stroke()
+def mm2dots(mm: float) -> int:
+    """Convert millimeters to dots."""
+    return round(mm / 25.4 * DPI)
 
-    if len(description) == 0:
-        return
 
-    name = description[0].strip()
+# NOTE: Adapt contants to the desired layout
+BADGE_HEIGHT = mm2dots(66)
+BADGE_WIDTH = mm2dots(96)
+INNER_MARGIN = mm2dots(3)
 
-    if len(description) > 1:
-        company = description[1].strip()
-    else:
-        company = ''
+PAGE_HEIGHT = mm2dots(297)
+PAGE_WIDTH = mm2dots(210)
 
-    if len(description) > 2:
-        role = description[2].strip()
-    else:
-        role = ''
 
-    if name and company and role:
-        name_y = 5
-        company_y = 60
-        role_y = 80
-    elif name and company and not role:
-        name_y = 10
-        company_y = 70
-    elif name and not company and role:
+@dataclasses.dataclass
+class Person:
+    name: str
+    group: str = ""
+    role: str = ""
+
+
+def open_background(filename: str) -> Image.Image:
+    return Image.open(filename).convert("RGB").resize((BADGE_WIDTH, BADGE_HEIGHT))
+
+
+def make_document(persons: list[Person], output: str, background: str) -> None:
+    bg = open_background(background)
+    pages = make_pages(persons, bg)
+
+    pages[0].save(output, save_all=True, append_images=pages[1:], dpi=(DPI, DPI))
+
+
+def make_pages(persons: Iterable[Person], background: Image.Image) -> list[Image.Image]:
+    pages = []
+    it = iter(persons)
+
+    while not is_empty(it):
+        pages.append(make_page(it, background))
+
+    return pages
+
+
+def make_page(persons: Iterable[Person], background: Image.Image) -> Image.Image:
+    page = Image.new("RGB", (PAGE_WIDTH, PAGE_HEIGHT), color=0xFFFFFF)
+
+    nb_badges_height = PAGE_HEIGHT // (BADGE_HEIGHT + INNER_MARGIN)
+    nb_badges_width = PAGE_WIDTH // (BADGE_WIDTH + INNER_MARGIN)
+
+    margin_top = (
+        PAGE_HEIGHT
+        - nb_badges_height * BADGE_HEIGHT
+        - (nb_badges_height - 1) * INNER_MARGIN
+    ) // 2
+
+    margin_left = (
+        PAGE_WIDTH
+        - nb_badges_width * BADGE_WIDTH
+        - (nb_badges_width - 1) * INNER_MARGIN
+    ) // 2
+
+    positions = itertools.product(range(nb_badges_width), range(nb_badges_height))
+
+    for pos, person in zip(positions, persons):
+        badge = make_badge(background, person)
+        pos = (
+            margin_left + pos[0] * (BADGE_WIDTH + INNER_MARGIN),
+            margin_top + pos[1] * (BADGE_HEIGHT + INNER_MARGIN),
+        )
+        page.paste(badge, pos)
+
+    return page
+
+
+def make_badge(background: Image.Image, person: Person) -> Image.Image:
+    badge = background.copy()
+
+    name_y = 5
+    group_y = 60
+    role_y = 80
+    if not person.group and not person.role:
+        name_y = 30
+    elif not person.group:
         name_y = 10
         role_y = 70
-    elif name and not company and not role:
-        name_y = 30
+    elif not person.role:
+        name_y = 10
+        group_y = 70
 
-    ctx.set_source_rgb(TEXT_COLOR[0], TEXT_COLOR[1], TEXT_COLOR[2])
-    pc = pangocairo.CairoContext(ctx)
+    draw_text(
+        badge,
+        person.name,
+        name_y,
+        (round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 3)),
+        fontsize=18,
+        multiline=True,
+    )
+    if person.group:
+        draw_text(
+            badge,
+            person.group,
+            group_y,
+            (round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 7)),
+            fontsize=14,
+        )
+    if person.role:
+        draw_text(
+            badge,
+            person.role,
+            role_y,
+            (round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 7)),
+            fontsize=14,
+        )
 
-    if name:
-        draw_text(ctx, pc, name,    18, name_y, width * 0.9, height / 3, width, True)
-    if company:
-        draw_text(ctx, pc, company, 16, company_y, width * 0.9, height / 7, width)
-    if role:
-        draw_text(ctx, pc, role,    14, role_y, width * 0.9, height / 7, width)
+    return badge
 
-def generate_document(input_csv, output_pdf, background_image):
-    surface = cairo.PDFSurface(output_pdf,
-                               convert_mm_to_dots(PAGE_WIDTH),
-                               convert_mm_to_dots(PAGE_HEIGHT))
 
-    nb_badges_height = PAGE_HEIGHT / (BADGE_HEIGHT + INNER_MARGIN)
-    nb_badges_width  = PAGE_WIDTH / (BADGE_WIDTH + INNER_MARGIN)
+def draw_text(
+    img: Image.Image,
+    text: str,
+    y: int,
+    bbox: tuple[int, int],
+    fontsize: int = 18,
+    multiline=False,
+) -> None:
+    """Draw text on an image. The text is centered on the image and offset of `y` dots.
+    Fontsize is adjusted to fit the text into the given size.
 
-    margin_top_bottom = (PAGE_HEIGHT - \
-                             nb_badges_height * BADGE_HEIGHT - \
-                             (nb_badges_height - 1) * INNER_MARGIN) / 2
+    :param img: image to draw on
+    :param text: text to write
+    :param y: vertical offset in dots
+    :param bbox: maximum size of the text. fontsize is adjusted to fit into it.
+    :param fontsize: maximum font size for the text. Actual font size may be lower to fit `text` into `size`.
+    """
+    canvas = ImageDraw.Draw(img)
 
-    margin_left_right = (PAGE_WIDTH - \
-                             nb_badges_width * BADGE_WIDTH - \
-                             (nb_badges_width - 1) * INNER_MARGIN) / 2
+    # TODO: softcode font
+    fontname = "DejaVuSans.ttf"
 
-    import csv
-    csvFile = csv.reader(open(input_csv, 'rb'), delimiter=',')
+    while True:
+        font = ImageFont.truetype(fontname, fontsize)
 
-    ctx = cairo.Context(surface)
+        # NOTE: poor algorithm because it repeats itself a lot between reducing
+        # size and wrapping text
+        if multiline:
+            text = wrap_text(font, text, bbox[0])
 
-    row = 0
-    col = 0
+        _, _, width, height = canvas.multiline_textbbox((0, 0), text, font)
 
-    for badge in csvFile:
-        ctx.save()
-        ctx.translate(convert_mm_to_dots(margin_left_right + col * (BADGE_WIDTH + INNER_MARGIN)),
-                      convert_mm_to_dots(margin_top_bottom + row * (BADGE_HEIGHT + INNER_MARGIN)))
-        draw_badge(ctx, BADGE_WIDTH, BADGE_HEIGHT, badge, background_image)
-        ctx.restore()
+        if width > bbox[0] or height > bbox[1]:
+            fontsize -= 1
+        else:
+            break
 
-        col += 1
-        if col == nb_badges_width:
-            col = 0
-            row += 1
-        if row == nb_badges_height:
-            col = 0
-            row = 0
-            surface.show_page()
+    # `font` is at the right size
 
-    surface.finish()
+    # TODO: softcode text color
+    white = 0xFFFFFF
 
-def main():
-    usage = '%prog -o output-pdf -i input-csv -b background-image'
-    parser = optparse.OptionParser(usage=usage,
-                                   version='%%prog %s' % __version__)
-    parser.add_option('-o', dest='output_pdf', metavar='OUTPUT_PDF',
-                      help='specify the location of the output PDF.')
-    parser.add_option('-i', dest='input_csv', metavar='INPUT_CSV',
-                      help='specify the location of the input CSV.')
-    parser.add_option('-b', dest='background_image', metavar='BACKGROUND_IMAGE',
-                      help='specify the location of the background image.')
-    (options, args) = parser.parse_args()
-    if len(args):
-        parser.print_help()
-        return 1
+    # Position text in the horizontal center of the image.
+    # anchor is set to middle (horiz.) and top (vert.)
+    # See https://pillow.readthedocs.io/en/stable/handbook/text-anchors.html
+    pos = (img.width / 2, y)
+    canvas.multiline_text(pos, text, fill=white, font=font, anchor="ma", align="center")
 
-    if not options.output_pdf:
-        parser.error("Missing output PDF")
-    if not options.input_csv:
-        parser.error("Missing input CSV")
-    if not options.background_image:
-        parser.error("Missing background image")
-    if not os.path.exists(options.input_csv):
-        parser.error("Input CSV %s does not exist" % options.input_csv)
-    if not os.path.exists(options.background_image):
-        parser.error("Background image %s does not exist" % options.background_image)
 
-    generate_document(options.input_csv, options.output_pdf, options.background_image)
+def wrap_text(font: ImageFont.FreeTypeFont, text: str, max_width: int) -> str:
+    words = text.split()
+    lines = []
+    line = new_line = words[0]
+    for word in words[1:]:
+        new_line += " " + word
 
-if __name__ == '__main__':
-    sys.exit(main())
+        _, _, width, height = font.getbbox(new_line)
+
+        if width > max_width:
+            lines.append(line)
+            new_line = line = word
+        else:
+            line = new_line
+
+    lines.append(line)
+
+    return "\n".join(lines)
+
+
+def is_empty(iterator: Iterator) -> bool:
+    """Check if an iterator is empty."""
+    _, it2 = itertools.tee(iterator)
+    try:
+        next(it2)
+        return False
+    except StopIteration:
+        return True
+
+
+def parse_persons(ifd: io.StringIO) -> list[Person]:
+    persons = []
+    for row in csv.reader(ifd):
+        persons.append(Person(*row))
+
+    return persons
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-i",
+        "--input",
+        type=argparse.FileType("r"),
+        metavar="CSV",
+        required=True,
+        help="input csv file",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=argparse.FileType("wb"),
+        metavar="PDF",
+        required=True,
+        help="output pdf file",
+    )
+    parser.add_argument(
+        "-b", "--background", required=True, help="background image for the badge"
+    )
+
+    args = parser.parse_args()
+
+    make_document(parse_persons(args.input), args.output, args.background)
