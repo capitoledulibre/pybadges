@@ -3,11 +3,12 @@ import dataclasses
 import io
 import itertools
 from typing import Iterable
-from typing import Iterator
 
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+
+from iterators import peekable
 
 
 # TODO: softcode
@@ -48,9 +49,9 @@ def make_document(persons: list[Person], output: str, background: str) -> None:
 
 def make_pages(persons: Iterable[Person], background: Image.Image) -> list[Image.Image]:
     pages = []
-    it = iter(persons)
+    it = peekable(iter(persons))
 
-    while not is_empty(it):
+    while not it.empty():
         pages.append(make_page(it, background))
 
     return pages
@@ -197,16 +198,6 @@ def wrap_text(font: ImageFont.FreeTypeFont, text: str, max_width: int) -> str:
     lines.append(line)
 
     return "\n".join(lines)
-
-
-def is_empty(iterator: Iterator) -> bool:
-    """Check if an iterator is empty."""
-    _, it2 = itertools.tee(iterator)
-    try:
-        next(it2)
-        return False
-    except StopIteration:
-        return True
 
 
 def parse_persons(ifd: io.StringIO) -> list[Person]:
