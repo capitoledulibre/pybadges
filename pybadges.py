@@ -36,18 +36,32 @@ class Person:
     role: str = ""
 
 
-def open_background(filename: str) -> Image.Image:
-    return Image.open(filename).convert("RGB").resize((BADGE_WIDTH, BADGE_HEIGHT))
+class ImageLoader:
+    def __init__(self) -> None:
+        self._img = {}
+
+    def get(self, filename: str, size: tuple[int, int] | None = None) -> Image.Image:
+        try:
+            return self._img[filename].copy()
+        except KeyError:
+            img = Image.open(filename).convert("RGB")
+            if size is not None:
+                img = img.resize(size)
+
+            self._img[filename] = img
+            return img.copy()
+
+
+loader = ImageLoader()
 
 
 def make_document(persons: list[Person], output: str, background: str) -> None:
-    bg = open_background(background)
-    pages = make_pages(persons, bg)
+    pages = make_pages(persons, background)
 
     pages[0].save(output, save_all=True, append_images=pages[1:], dpi=(DPI, DPI))
 
 
-def make_pages(persons: Iterable[Person], background: Image.Image) -> list[Image.Image]:
+def make_pages(persons: Iterable[Person], background: str) -> list[Image.Image]:
     pages = []
     it = peekable(iter(persons))
 
@@ -57,7 +71,7 @@ def make_pages(persons: Iterable[Person], background: Image.Image) -> list[Image
     return pages
 
 
-def make_page(persons: Iterable[Person], background: Image.Image) -> Image.Image:
+def make_page(persons: Iterable[Person], background: str) -> Image.Image:
     page = Image.new("RGB", (PAGE_WIDTH, PAGE_HEIGHT), color=0xFFFFFF)
 
     nb_badges_height = PAGE_HEIGHT // (BADGE_HEIGHT + INNER_MARGIN)
@@ -88,8 +102,8 @@ def make_page(persons: Iterable[Person], background: Image.Image) -> Image.Image
     return page
 
 
-def make_badge(background: Image.Image, person: Person) -> Image.Image:
-    badge = background.copy()
+def make_badge(background: str, person: Person) -> Image.Image:
+    badge = loader.get(background)
 
     name_y = 5
     group_y = 60
