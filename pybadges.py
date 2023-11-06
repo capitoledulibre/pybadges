@@ -2,6 +2,7 @@ import csv
 import dataclasses
 import io
 import itertools
+import sys
 from typing import Iterable
 
 from PIL import Image
@@ -11,8 +12,7 @@ from PIL import ImageFont
 from iterators import peekable
 
 
-# TODO: softcode
-DPI = 72
+DPI = 300
 
 
 def mm2dots(mm: float) -> int:
@@ -21,9 +21,17 @@ def mm2dots(mm: float) -> int:
 
 
 # NOTE: Adapt contants to the desired layout
-BADGE_HEIGHT = mm2dots(66)
-BADGE_WIDTH = mm2dots(96)
-INNER_MARGIN = mm2dots(3)
+BADGE_HEIGHT = mm2dots(147)
+BADGE_WIDTH = mm2dots(104)
+INNER_MARGIN = mm2dots(1)
+
+SIZE_NAME = round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 6)
+SIZE_LASTNAME = round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 7)
+SIZE_GROUP = round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 8)
+
+FONT_SIZE_NAME = 256
+FONT_SIZE_LASTNAME = 172
+FONT_SIZE_GROUP = 136
 
 PAGE_HEIGHT = mm2dots(297)
 PAGE_WIDTH = mm2dots(210)
@@ -32,20 +40,40 @@ PAGE_WIDTH = mm2dots(210)
 @dataclasses.dataclass
 class Person:
     name: str
+    lastname: str = ""
     group: str = ""
-    role: str = ""
+    logo: str = ""
+
+    # NOTE: Adapt contants to the desired layout
+    def positions(self) -> tuple[int, int, int]:
+        name_y = mm2dots(66)
+        lastname_y = mm2dots(88)
+        group_y = mm2dots(105)
+        if not self.lastname:
+            group_y = mm2dots(100)
+
+        return name_y, lastname_y, group_y
 
 
 class ImageLoader:
     def __init__(self) -> None:
         self._img = {}
 
-    def get(self, filename: str, size: tuple[int, int] | None = None) -> Image.Image:
+    def get(
+        self,
+        filename: str,
+        size: tuple[int, int] | None = None,
+        keep_ratio: bool = False,
+    ) -> Image.Image:
         try:
             return self._img[filename].copy()
         except KeyError:
-            img = Image.open(filename).convert("RGB")
+            img = Image.open(filename).convert("RGBA")
             if size is not None:
+                width, height = size
+                if keep_ratio:
+                    ratio = min(width / img.width, height / img.height)
+                    size = round(ratio * img.width), round(ratio * img.height)
                 img = img.resize(size)
 
             self._img[filename] = img
@@ -72,7 +100,7 @@ def make_pages(persons: Iterable[Person], background: str) -> list[Image.Image]:
 
 
 def make_page(persons: Iterable[Person], background: str) -> Image.Image:
-    page = Image.new("RGB", (PAGE_WIDTH, PAGE_HEIGHT), color=0xFFFFFF)
+    page = Image.new("RGB", (PAGE_WIDTH, PAGE_HEIGHT), color=0xF0F0F0)
 
     nb_badges_height = PAGE_HEIGHT // (BADGE_HEIGHT + INNER_MARGIN)
     nb_badges_width = PAGE_WIDTH // (BADGE_WIDTH + INNER_MARGIN)
@@ -103,44 +131,21 @@ def make_page(persons: Iterable[Person], background: str) -> Image.Image:
 
 
 def make_badge(background: str, person: Person) -> Image.Image:
+    print("Badge:", person, file=sys.stderr)
     badge = loader.get(background)
 
-    name_y = 5
-    group_y = 60
-    role_y = 80
-    if not person.group and not person.role:
-        name_y = 30
-    elif not person.group:
-        name_y = 10
-        role_y = 70
-    elif not person.role:
-        name_y = 10
-        group_y = 70
+    name_y, lastname_y, group_y = person.positions()
 
-    draw_text(
-        badge,
-        person.name,
-        name_y,
-        (round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 3)),
-        fontsize=18,
-        multiline=True,
-    )
-    if person.group:
-        draw_text(
-            badge,
-            person.group,
-            group_y,
-            (round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 7)),
-            fontsize=14,
-        )
-    if person.role:
-        draw_text(
-            badge,
-            person.role,
-            role_y,
-            (round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 7)),
-            fontsize=14,
-        )
+    if person.logo:
+        logo = loader.get(person.logo, SIZE_GROUP, keep_ratio=True)
+        pos = round((badge.width - logo.width) / 2), group_y
+        badge.paste(logo, pos, logo)
+
+    draw_text(badge, person.name, name_y, SIZE_NAME, FONT_SIZE_NAME, multiline=True)
+    if person.lastname:
+        draw_text(badge, person.lastname, lastname_y, SIZE_LASTNAME, FONT_SIZE_LASTNAME)
+    if person.group and not person.logo:
+        draw_text(badge, person.group, group_y, SIZE_GROUP, FONT_SIZE_GROUP)
 
     return badge
 
@@ -153,14 +158,15 @@ def draw_text(
     fontsize: int = 18,
     multiline=False,
 ) -> None:
-    """Draw text on an image. The text is centered on the image and offset of `y` dots.
-    Fontsize is adjusted to fit the text into the given size.
+    """Draw text on an image. The text is centered on the image and vertically offset of `y` dots.
+    fontsize is adjusted to fit the text into the given size.
 
     :param img: image to draw on
     :param text: text to write
     :param y: vertical offset in dots
     :param bbox: maximum size of the text. fontsize is adjusted to fit into it.
     :param fontsize: maximum font size for the text. Actual font size may be lower to fit `text` into `size`.
+    :param multiline: try to split the text in multiple lines to fit bbox.
     """
     canvas = ImageDraw.Draw(img)
 
@@ -178,7 +184,7 @@ def draw_text(
         _, _, width, height = canvas.multiline_textbbox((0, 0), text, font)
 
         if width > bbox[0] or height > bbox[1]:
-            fontsize -= 1
+            fontsize -= 8
         else:
             break
 
@@ -186,16 +192,19 @@ def draw_text(
 
     # TODO: softcode text color
     white = 0xFFFFFF
+    black = 0x000000
 
     # Position text in the horizontal center of the image.
     # anchor is set to middle (horiz.) and top (vert.)
     # See https://pillow.readthedocs.io/en/stable/handbook/text-anchors.html
     pos = (img.width / 2, y)
-    canvas.multiline_text(pos, text, fill=white, font=font, anchor="ma", align="center")
+    canvas.multiline_text(pos, text, fill=black, font=font, anchor="ma", align="center")
 
 
 def wrap_text(font: ImageFont.FreeTypeFont, text: str, max_width: int) -> str:
     words = text.split()
+    if not words:
+        words = [""]
     lines = []
     line = new_line = words[0]
     for word in words[1:]:
@@ -216,7 +225,7 @@ def wrap_text(font: ImageFont.FreeTypeFont, text: str, max_width: int) -> str:
 
 def parse_persons(ifd: io.StringIO) -> list[Person]:
     persons = []
-    for row in csv.reader(ifd):
+    for row in csv.reader(ifd, skipinitialspace=True):
         persons.append(Person(*row))
 
     return persons

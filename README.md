@@ -7,20 +7,19 @@ conference attendees and speakers.
 
 It requires a `CSV` file as input, with the following format:
 
-    firstname lastname,company,role
-    firstname lastname,company,role
-    firstname lastname,company,role
-    firstname lastname,company,role
+    firstname,lastname,company,logo
+    firstname,lastname,company,logo
+    firstname,lastname,company,logo
+    firstname,lastname,company,logo
 
-Typically `role` can be `speaker`, `attendee`, `organizer` or something
-like that.
+`lastname`, `company` and `logo` are optional. `logo` is the path to the company
+logo.
 
 It also requires a background image used for the badges.
 
 Typical usage:
 
-    ./pybadges -i input.csv -o output.pdf -b background.png
-
+    poetry run python pybadges.py -i input.csv -o output.pdf -b background.png
 
 ## License
 
