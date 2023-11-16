@@ -117,13 +117,13 @@ def make_page(persons: Iterable[Person], background: str) -> Image.Image:
         - (nb_badges_width - 1) * INNER_MARGIN
     ) // 2
 
-    positions = itertools.product(range(nb_badges_width), range(nb_badges_height))
+    positions = itertools.product(range(nb_badges_height), range(nb_badges_width))
 
     for pos, person in zip(positions, persons):
         badge = make_badge(background, person)
         pos = (
-            margin_left + pos[0] * (BADGE_WIDTH + INNER_MARGIN),
-            margin_top + pos[1] * (BADGE_HEIGHT + INNER_MARGIN),
+            margin_left + pos[1] * (BADGE_WIDTH + INNER_MARGIN),
+            margin_top + pos[0] * (BADGE_HEIGHT + INNER_MARGIN),
         )
         page.paste(badge, pos)
 
