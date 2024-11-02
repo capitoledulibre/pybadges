@@ -23,6 +23,7 @@ def mm2dots(mm: float) -> int:
 
 @dataclasses.dataclass
 class Person:
+    background: str
     name: str
     lastname: str = ""
     group: str = ""
@@ -57,29 +58,23 @@ class ImageLoader:
 loader = ImageLoader()
 
 
-def make_document(
-    config: Config, persons: list[Person], output: str, background: str
-) -> None:
-    pages = make_pages(config, persons, background)
+def make_document(config: Config, persons: list[Person], output: str) -> None:
+    pages = make_pages(config, persons)
 
     pages[0].save(output, save_all=True, append_images=pages[1:], dpi=(DPI, DPI))
 
 
-def make_pages(
-    config: Config, persons: Iterable[Person], background: str
-) -> list[Image.Image]:
+def make_pages(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
     pages = []
     it = peekable(iter(persons))
 
     while not it.empty():
-        pages.append(make_page(config, it, background))
+        pages.append(make_page(config, it))
 
     return pages
 
 
-def make_page(
-    config: Config, persons: Iterable[Person], background: str
-) -> Image.Image:
+def make_page(config: Config, persons: Iterable[Person]) -> Image.Image:
     c = config  # 6 times shorter to type
     page = Image.new("RGB", c.page.size(), color=0xF0F0F0)
 
@@ -101,7 +96,7 @@ def make_page(
     positions = itertools.product(range(nb_badges_height), range(nb_badges_width))
 
     for pos, person in zip(positions, persons):
-        badge = make_badge(config, background, person)
+        badge = make_badge(config, person)
         pos = (
             margin_left + pos[1] * (c.badge.width + c.inner_margin),
             margin_top + pos[0] * (c.badge.height + c.inner_margin),
@@ -111,10 +106,10 @@ def make_page(
     return page
 
 
-def make_badge(config: Config, background: str, person: Person) -> Image.Image:
+def make_badge(config: Config, person: Person) -> Image.Image:
     print("Badge:", person, file=sys.stderr)
     c = config  # 6 times shorter to type
-    badge = loader.get(background)
+    badge = loader.get(person.background)
 
     if person.logo:
         logo = loader.get(person.logo, c.group.size(), keep_ratio=True)
@@ -258,14 +253,10 @@ if __name__ == "__main__":
         required=True,
         help="output pdf file",
     )
-    parser.add_argument(
-        "-b", "--background", required=True, help="background image for the badge"
-    )
 
     args = parser.parse_args()
 
     config = Config.from_toml(args.config)
-    make_document(config, parse_persons(args.input), args.output, args.background)
+    make_document(config, parse_persons(args.input), args.output)
 
     # TODO: recto-verso
-    # TODO: background in CSV
