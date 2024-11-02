@@ -19,7 +19,9 @@ It also requires a background image used for the badges.
 
 Typical usage:
 
-    poetry run python pybadges.py -i input.csv -o output.pdf -b background.png
+    poetry run python pybadges.py -c config.toml -i input.csv -o output.pdf -b background.png
+
+Use `badges.toml` as an example of config.
 
 ## License
 
