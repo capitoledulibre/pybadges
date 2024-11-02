@@ -24,6 +24,7 @@ def mm2dots(mm: float) -> int:
 @dataclasses.dataclass
 class Person:
     background: str
+    backside: str
     name: str
     lastname: str = ""
     group: str = ""
@@ -69,14 +70,16 @@ def make_pages(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
     it = peekable(iter(persons))
 
     while not it.empty():
-        pages.append(make_page(config, it))
+        pages.extend(make_page(config, it))
 
     return pages
 
 
-def make_page(config: Config, persons: Iterable[Person]) -> Image.Image:
+def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
+    """Makes one page and its backpage."""
     c = config  # 6 times shorter to type
-    page = Image.new("RGB", c.page.size(), color=0xF0F0F0)
+    frontpage = Image.new("RGB", c.page.size(), color=0xF0F0F0)
+    backpage = Image.new("RGB", c.page.size(), color=0xF0F0F0)
 
     nb_badges_height = c.page.height // (c.badge.height + c.inner_margin)
     nb_badges_width = c.page.width // (c.badge.width + c.inner_margin)
@@ -93,17 +96,31 @@ def make_page(config: Config, persons: Iterable[Person]) -> Image.Image:
         - (nb_badges_width - 1) * c.inner_margin
     ) // 2
 
-    positions = itertools.product(range(nb_badges_height), range(nb_badges_width))
-
-    for pos, person in zip(positions, persons):
-        badge = make_badge(config, person)
-        pos = (
+    def make_coord(pos: tuple[int, int]) -> tuple[int, int]:
+        return (
             margin_left + pos[1] * (c.badge.width + c.inner_margin),
             margin_top + pos[0] * (c.badge.height + c.inner_margin),
         )
-        page.paste(badge, pos)
 
-    return page
+    front_positions = [
+        make_coord(pos)
+        for pos in itertools.product(range(nb_badges_height), range(nb_badges_width))
+    ]
+    back_positions = [
+        make_coord(pos)
+        for pos in itertools.product(
+            range(nb_badges_height), reversed(range(nb_badges_width))
+        )
+    ]
+
+    for front_pos, back_pos, person in zip(front_positions, back_positions, persons):
+        badge = make_badge(config, person)
+        frontpage.paste(badge, front_pos)
+
+        backside = loader.get(person.backside)
+        backpage.paste(backside, back_pos)
+
+    return [frontpage, backpage]
 
 
 def make_badge(config: Config, person: Person) -> Image.Image:
