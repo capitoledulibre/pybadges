@@ -1,6 +1,7 @@
 dpi = 300
 inner_margin = 1
 resize = false
+double_sided = true  # write text on both sides
 
 [page]
 height = 297

@@ -7,14 +7,14 @@ conference attendees and speakers.
 
 It requires a `CSV` file as input, with the following format:
 
-    background,backside,firstname,lastname,company,logo
-    background,backside,firstname,lastname,company,logo
-    background,backside,firstname,lastname,company,logo
-    background,backside,firstname,lastname,company,logo
+    frontside,backside,firstname,lastname,company,logo
+    frontside,backside,firstname,lastname,company,logo
+    frontside,backside,firstname,lastname,company,logo
+    frontside,backside,firstname,lastname,company,logo
 
 `lastname`, `company` and `logo` are optional. `logo` is the path to the company
-logo. `background` is the background image to use on each badge. The image is
-resized if required. `backside` is an image to print on the backside, resized as well.
+logo. `frontside`  and `backside` are the background images to use on each
+badge. The images are resized if required.
 
 Typical usage:
 

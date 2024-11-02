@@ -64,6 +64,7 @@ class Config:
         dpi: int,
         inner_margin: float,
         resize: bool,
+        double_sided: bool,
         page: Box,
         badge: Box,
         name: TextBox,
@@ -73,6 +74,7 @@ class Config:
         self.dpi = dpi
         self.inner_margin = mm2dots(dpi, inner_margin)
         self.resize = resize
+        self.double_sided = double_sided
         self.page = page
         self.badge = badge
 
@@ -94,6 +96,7 @@ class Config:
                 dpi=dpi,
                 inner_margin=dct["inner_margin"],
                 resize=dct["resize"],
+                double_sided=dct["double_sided"],
                 page=page,
                 badge=badge,
                 name=name,

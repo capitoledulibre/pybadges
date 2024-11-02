@@ -15,7 +15,7 @@ from iterators import peekable
 
 @dataclasses.dataclass
 class Person:
-    background: str
+    frontside: str
     backside: str
     name: str
     lastname: str = ""
@@ -108,21 +108,22 @@ def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
     ]
 
     for front_pos, back_pos, person in zip(front_positions, back_positions, persons):
-        badge = make_badge(config, person)
-        frontpage.paste(badge, front_pos)
-
-        resize = c.badge.size() if c.resize else None
-        backside = loader.get(person.backside, resize)
-        backpage.paste(backside, back_pos)
+        frontpage.paste(make_badge(config, person), front_pos)
+        backpage.paste(make_badge(config, person, backside=True), back_pos)
 
     return [frontpage, backpage]
 
 
-def make_badge(config: Config, person: Person) -> Image.Image:
+def make_badge(config: Config, person: Person, backside: bool = False) -> Image.Image:
     print("Badge:", person, file=sys.stderr)
     c = config  # 6 times shorter to type
+
+    background = person.frontside if not backside else person.backside
     resize = c.badge.size() if c.resize else None
-    badge = loader.get(person.background, resize)
+    badge = loader.get(background, resize)
+
+    if backside and not c.double_sided:
+        return badge
 
     if person.logo:
         logo = loader.get(person.logo, c.group.size(), keep_ratio=True)
@@ -271,5 +272,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = Config.from_toml(args.config)
     make_document(config, parse_persons(args.input), args.output)
-
-    # TODO: recto-verso
