@@ -1,6 +1,7 @@
 dpi = 300  # unused
 # TODO: use dpi from config
 inner_margin = 1
+resize = false
 
 [page]
 height = 297

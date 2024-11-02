@@ -16,11 +16,6 @@ from iterators import peekable
 DPI = 300
 
 
-def mm2dots(mm: float) -> int:
-    """Convert millimeters to dots."""
-    return round(mm / 25.4 * DPI)
-
-
 @dataclasses.dataclass
 class Person:
     background: str
@@ -117,7 +112,8 @@ def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
         badge = make_badge(config, person)
         frontpage.paste(badge, front_pos)
 
-        backside = loader.get(person.backside)
+        resize = c.badge.size() if c.resize else None
+        backside = loader.get(person.backside, resize)
         backpage.paste(backside, back_pos)
 
     return [frontpage, backpage]
@@ -126,7 +122,8 @@ def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
 def make_badge(config: Config, person: Person) -> Image.Image:
     print("Badge:", person, file=sys.stderr)
     c = config  # 6 times shorter to type
-    badge = loader.get(person.background)
+    resize = c.badge.size() if c.resize else None
+    badge = loader.get(person.background, resize)
 
     if person.logo:
         logo = loader.get(person.logo, c.group.size(), keep_ratio=True)
@@ -273,7 +270,6 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
     config = Config.from_toml(args.config)
     make_document(config, parse_persons(args.input), args.output)
 
