@@ -13,9 +13,6 @@ from config import Config
 from iterators import peekable
 
 
-DPI = 300
-
-
 @dataclasses.dataclass
 class Person:
     background: str
@@ -57,7 +54,9 @@ loader = ImageLoader()
 def make_document(config: Config, persons: list[Person], output: str) -> None:
     pages = make_pages(config, persons)
 
-    pages[0].save(output, save_all=True, append_images=pages[1:], dpi=(DPI, DPI))
+    pages[0].save(
+        output, save_all=True, append_images=pages[1:], dpi=(config.dpi, config.dpi)
+    )
 
 
 def make_pages(config: Config, persons: Iterable[Person]) -> list[Image.Image]:

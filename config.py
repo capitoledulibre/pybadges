@@ -4,12 +4,9 @@ import tomllib
 import typing as t
 
 
-DPI = 300
-
-
-def mm2dots(mm: float) -> int:
+def mm2dots(dpi: int, mm: float) -> int:
     """Convert millimeters to dots."""
-    return round(mm / 25.4 * DPI)
+    return round(mm / 25.4 * dpi)
 
 
 class ConfigError(ValueError):
@@ -25,10 +22,10 @@ class Box:
         return (self.width, self.height)
 
     @classmethod
-    def from_dict(cls, dct: dict[str, t.Any]) -> t.Self:
+    def from_dict(cls, dpi: int, dct: dict[str, t.Any]) -> t.Self:
         try:
-            dct["height"] = mm2dots(dct["height"])
-            dct["width"] = mm2dots(dct["width"])
+            dct["height"] = mm2dots(dpi, dct["height"])
+            dct["width"] = mm2dots(dpi, dct["width"])
             return cls(**dct)
         except KeyError as e:
             raise ConfigError(f"ConfigError: missing key '{e}'")
@@ -48,11 +45,11 @@ class TextBox(Box):
         return int(self.color, base=0)
 
     @classmethod
-    def from_dict(cls, dct: dict[str, t.Any]) -> t.Self:
+    def from_dict(cls, dpi: int, dct: dict[str, t.Any]) -> t.Self:
         try:
-            dct["height"] = mm2dots(dct["height"])
-            dct["width"] = mm2dots(dct["width"])
-            dct["vertical_offset"] = mm2dots(dct["vertical_offset"])
+            dct["height"] = mm2dots(dpi, dct["height"])
+            dct["width"] = mm2dots(dpi, dct["width"])
+            dct["vertical_offset"] = mm2dots(dpi, dct["vertical_offset"])
             return cls(**dct)
         except KeyError as e:
             raise ConfigError(f"ConfigError: missing key '{e}'")
@@ -74,7 +71,7 @@ class Config:
         group: TextBox,
     ):
         self.dpi = dpi
-        self.inner_margin = mm2dots(inner_margin)
+        self.inner_margin = mm2dots(dpi, inner_margin)
         self.resize = resize
         self.page = page
         self.badge = badge
@@ -86,14 +83,15 @@ class Config:
     @classmethod
     def from_dict(cls, dct: dict[str, t.Any]) -> t.Self:
         try:
-            page = Box.from_dict(dct["page"])
-            badge = Box.from_dict(dct["badge"])
-            name = TextBox.from_dict(dct["name"])
-            lastname = TextBox.from_dict(dct["lastname"])
-            group = TextBox.from_dict(dct["group"])
+            dpi = dct["dpi"]
+            page = Box.from_dict(dpi, dct["page"])
+            badge = Box.from_dict(dpi, dct["badge"])
+            name = TextBox.from_dict(dpi, dct["name"])
+            lastname = TextBox.from_dict(dpi, dct["lastname"])
+            group = TextBox.from_dict(dpi, dct["group"])
 
             return cls(
-                dpi=dct["dpi"],
+                dpi=dpi,
                 inner_margin=dct["inner_margin"],
                 resize=dct["resize"],
                 page=page,

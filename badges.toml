@@ -1,5 +1,4 @@
-dpi = 300  # unused
-# TODO: use dpi from config
+dpi = 300
 inner_margin = 1
 resize = false
 
