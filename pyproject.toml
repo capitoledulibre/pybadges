@@ -8,6 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8"
 pillow = "^10.1.0"
+jsonschema = "^4.23.0"
 
 
 [build-system]
