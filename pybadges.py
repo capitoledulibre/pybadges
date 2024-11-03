@@ -150,20 +150,24 @@ def make_badge(config: Config, person: Person, backside: bool = False) -> Image.
         if not person.lastname:
             vertical_offset += c.lastname.vertical_offset_if_null
 
-        if person.logo:
-            logo = loader.get(person.logo, c.group.size(), keep_ratio=True)
-            pos = round((badge.width - logo.width) / 2), vertical_offset
-            badge.paste(logo, pos, logo)
-        else:
-            draw_text(
-                badge,
-                person.group,
-                vertical_offset,
-                c.group.size(),
-                c.group.font_name,
-                c.group.font_size,
-                c.group.color_as_int(),
-            )
+        draw_text(
+            badge,
+            person.group,
+            vertical_offset,
+            c.group.size(),
+            c.group.font_name,
+            c.group.font_size,
+            c.group.color_as_int(),
+        )
+
+    if person.logo:
+        vertical_offset = c.logo.vertical_offset
+        if not person.lastname:
+            vertical_offset += c.lastname.vertical_offset_if_null
+
+        logo = loader.get(person.logo, c.logo.size(), keep_ratio=True)
+        pos = round((badge.width - logo.width) / 2), vertical_offset
+        badge.paste(logo, pos, logo)
 
     return badge
 
