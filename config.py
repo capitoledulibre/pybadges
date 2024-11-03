@@ -36,6 +36,7 @@ class TextBox(Box):
     font_name: str
     font_size: int
     color: str
+    vertical_offset_if_null: int = 0
 
     def color_as_int(self) -> int:
         return int(self.color, base=0)
@@ -45,6 +46,9 @@ class TextBox(Box):
         dct["height"] = mm2dots(dpi, dct["height"])
         dct["width"] = mm2dots(dpi, dct["width"])
         dct["vertical_offset"] = mm2dots(dpi, dct["vertical_offset"])
+        dct["vertical_offset_if_null"] = mm2dots(
+            dpi, dct.get("vertical_offset_if_null", 0)
+        )
         return cls(**dct)
 
 
@@ -136,6 +140,7 @@ _schema = {
                 "font_name": {"type": "string"},
                 "font_size": {"type": "number", "minimum": 1},
                 "color": {"type": "string", "pattern": "^0x[0-9A-Fa-f]{6}$"},
+                "vertical_offset_if_null": {"type": "number"},
             },
             "required": [
                 "height",
