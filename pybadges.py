@@ -138,6 +138,7 @@ def make_badge(config: Config, person: Person) -> Image.Image:
         person.name,
         c.name.vertical_offset,
         c.name.size(),
+        c.name.font_name,
         c.name.font_size,
         c.name.color_as_int(),
         multiline=True,
@@ -148,6 +149,7 @@ def make_badge(config: Config, person: Person) -> Image.Image:
             person.lastname,
             c.lastname.vertical_offset,
             c.lastname.size(),
+            c.lastname.font_name,
             c.lastname.font_size,
             c.lastname.color_as_int(),
         )
@@ -157,6 +159,7 @@ def make_badge(config: Config, person: Person) -> Image.Image:
             person.group,
             c.group.vertical_offset,
             c.group.size(),
+            c.group.font_name,
             c.group.font_size,
             c.group.color_as_int(),
         )
@@ -169,6 +172,7 @@ def draw_text(
     text: str,
     y: int,
     bbox: tuple[int, int],
+    fontname: str,
     fontsize: int = 18,
     color: int = 0x000000,
     multiline=False,
@@ -184,9 +188,6 @@ def draw_text(
     :param multiline: try to split the text in multiple lines to fit bbox.
     """
     canvas = ImageDraw.Draw(img)
-
-    # TODO: softcode font
-    fontname = "DejaVuSans.ttf"
 
     while True:
         font = ImageFont.truetype(fontname, fontsize)
