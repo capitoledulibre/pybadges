@@ -1,6 +1,9 @@
 dpi = 300
 inner_margin = 1
 resize = false
+# frontside_only: print only the front side of the badge. Everything related to
+# the backside is ignored.
+frontside_only = false
 # double_sided: write text on both sides
 double_sided = true
 
