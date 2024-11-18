@@ -9,8 +9,8 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 
-from config import Config
-from iterators import peekable
+from pybadges.config import Config
+from pybadges.iterators import peekable
 
 
 @dataclasses.dataclass
@@ -259,37 +259,3 @@ def parse_persons(ifd: io.StringIO) -> list[Person]:
         persons.append(Person(*row))
 
     return persons
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-c",
-        "--config",
-        type=argparse.FileType("rb"),
-        metavar="TOML",
-        required=True,
-        help="Config toml file. See README.md for format.",
-    )
-    parser.add_argument(
-        "-i",
-        "--input",
-        type=argparse.FileType("r"),
-        metavar="CSV",
-        required=True,
-        help="Input csv file. See README.md for format.",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=argparse.FileType("wb"),
-        metavar="PDF",
-        required=True,
-        help="output pdf file",
-    )
-
-    args = parser.parse_args()
-    config = Config.from_toml(args.config)
-    make_document(config, parse_persons(args.input), args.output)

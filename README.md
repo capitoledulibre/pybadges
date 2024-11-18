@@ -22,7 +22,7 @@ on each badge. The images are resized if required.
 
 Typical usage:
 ```sh
-poetry run python pybadges.py -c config.toml -i input.csv -o output.pdf
+poetry run python -m pybadges -c config.toml -i input.csv -o output.pdf
 ```
 
 ## License
