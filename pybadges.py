@@ -132,7 +132,7 @@ def make_badge(config: Config, person: Person, backside: bool = False) -> Image.
     resize = c.badge.size() if c.resize else None
     badge = loader.get(background, resize)
 
-    if backside and not c.double_sided:
+    if backside and not c.text_on_both_sides:
         return badge
 
     draw_text(

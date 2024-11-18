@@ -70,7 +70,7 @@ class Config:
         inner_margin: float,
         resize: bool,
         frontside_only: bool,
-        double_sided: bool,
+        text_on_both_sides: bool,
         page: Box,
         badge: Box,
         name: TextBox,
@@ -82,7 +82,7 @@ class Config:
         self.inner_margin = mm2dots(dpi, inner_margin)
         self.resize = resize
         self.frontside_only = frontside_only
-        self.double_sided = double_sided
+        self.text_on_both_sides = text_on_both_sides
         self.page = page
         self.badge = badge
 
@@ -106,7 +106,7 @@ class Config:
             inner_margin=dct["inner_margin"],
             resize=dct["resize"],
             frontside_only=dct["frontside_only"],
-            double_sided=dct["double_sided"],
+            text_on_both_sides=dct["text_on_both_sides"],
             page=page,
             badge=badge,
             name=name,
@@ -134,7 +134,7 @@ _schema = {
         "inner_margin": {"type": "number", "minimum": 0},
         "resize": {"type": "boolean"},
         "frontside_only": {"type": "boolean"},
-        "double_sided": {"type": "boolean"},
+        "text_on_both_sides": {"type": "boolean"},
         "page": {"$ref": "#/$defs/box"},
         "badge": {"$ref": "#/$defs/box"},
         "name": {"$ref": "#/$defs/textbox"},
@@ -190,7 +190,7 @@ _schema = {
         "inner_margin",
         "resize",
         "frontside_only",
-        "double_sided",
+        "text_on_both_sides",
         "page",
         "badge",
         "name",
