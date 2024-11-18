@@ -69,6 +69,7 @@ class Config:
         dpi: int,
         inner_margin: float,
         resize: bool,
+        frontside_only: bool,
         double_sided: bool,
         page: Box,
         badge: Box,
@@ -80,6 +81,7 @@ class Config:
         self.dpi = dpi
         self.inner_margin = mm2dots(dpi, inner_margin)
         self.resize = resize
+        self.frontside_only = frontside_only
         self.double_sided = double_sided
         self.page = page
         self.badge = badge
@@ -103,6 +105,7 @@ class Config:
             dpi=dpi,
             inner_margin=dct["inner_margin"],
             resize=dct["resize"],
+            frontside_only=dct["frontside_only"],
             double_sided=dct["double_sided"],
             page=page,
             badge=badge,
@@ -130,6 +133,7 @@ _schema = {
         "dpi": {"type": "integer", "minimum": 1},
         "inner_margin": {"type": "number", "minimum": 0},
         "resize": {"type": "boolean"},
+        "frontside_only": {"type": "boolean"},
         "double_sided": {"type": "boolean"},
         "page": {"$ref": "#/$defs/box"},
         "badge": {"$ref": "#/$defs/box"},
@@ -185,6 +189,7 @@ _schema = {
         "dpi",
         "inner_margin",
         "resize",
+        "frontside_only",
         "double_sided",
         "page",
         "badge",

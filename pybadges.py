@@ -72,9 +72,6 @@ def make_pages(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
 def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
     """Makes one page and its backpage."""
     c = config  # 6 times shorter to type
-    frontpage = Image.new("RGB", c.page.size(), color=0xF0F0F0)
-    backpage = Image.new("RGB", c.page.size(), color=0xF0F0F0)
-
     nb_badges_height = c.page.height // (c.badge.height + c.inner_margin)
     nb_badges_width = c.page.width // (c.badge.width + c.inner_margin)
 
@@ -96,22 +93,35 @@ def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
             margin_top + pos[0] * (c.badge.height + c.inner_margin),
         )
 
+    frontpage = Image.new("RGB", c.page.size(), color=0xF0F0F0)
     front_positions = [
         make_coord(pos)
         for pos in itertools.product(range(nb_badges_height), range(nb_badges_width))
     ]
-    back_positions = [
-        make_coord(pos)
-        for pos in itertools.product(
-            range(nb_badges_height), reversed(range(nb_badges_width))
-        )
-    ]
 
-    for front_pos, back_pos, person in zip(front_positions, back_positions, persons):
-        frontpage.paste(make_badge(config, person), front_pos)
-        backpage.paste(make_badge(config, person, backside=True), back_pos)
+    if c.frontside_only:
+        for front_pos, person in zip(front_positions, persons):
+            frontpage.paste(make_badge(config, person), front_pos)
+        return [frontpage]
 
-    return [frontpage, backpage]
+    else:
+        backpage = Image.new("RGB", c.page.size(), color=0xF0F0F0)
+
+        back_positions = [
+            make_coord(pos)
+            for pos in itertools.product(
+                range(nb_badges_height), reversed(range(nb_badges_width))
+            )
+        ]
+
+        for front_pos, back_pos, person in zip(
+            front_positions, back_positions, persons
+        ):
+            frontpage.paste(make_badge(config, person), front_pos)
+            if not c.frontside_only:
+                backpage.paste(make_badge(config, person, backside=True), back_pos)
+
+        return [frontpage, backpage]
 
 
 def make_badge(config: Config, person: Person, backside: bool = False) -> Image.Image:
