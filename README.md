@@ -7,19 +7,20 @@ conference attendees and speakers.
 
 It requires a `CSV` file as input, with the following format:
 
-    firstname,lastname,company,logo
-    firstname,lastname,company,logo
-    firstname,lastname,company,logo
-    firstname,lastname,company,logo
+    background,backside,firstname,lastname,company,logo
+    background,backside,firstname,lastname,company,logo
+    background,backside,firstname,lastname,company,logo
+    background,backside,firstname,lastname,company,logo
 
 `lastname`, `company` and `logo` are optional. `logo` is the path to the company
-logo.
-
-It also requires a background image used for the badges.
+logo. `background` is the background image to use on each badge. The image is
+resized if required. `backside` is an image to print on the backside, resized as well.
 
 Typical usage:
 
-    poetry run python pybadges.py -i input.csv -o output.pdf -b background.png
+    poetry run python pybadges.py -c config.toml -i input.csv -o output.pdf
+
+Use `badges.toml` as an example of config.
 
 ## License
 

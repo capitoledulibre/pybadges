@@ -9,6 +9,7 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 
+from config import Config
 from iterators import peekable
 
 
@@ -20,39 +21,14 @@ def mm2dots(mm: float) -> int:
     return round(mm / 25.4 * DPI)
 
 
-# NOTE: Adapt contants to the desired layout
-BADGE_HEIGHT = mm2dots(147)
-BADGE_WIDTH = mm2dots(104)
-INNER_MARGIN = mm2dots(1)
-
-SIZE_NAME = round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 6)
-SIZE_LASTNAME = round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 7)
-SIZE_GROUP = round(BADGE_WIDTH * 0.9), round(BADGE_HEIGHT / 8)
-
-FONT_SIZE_NAME = 256
-FONT_SIZE_LASTNAME = 172
-FONT_SIZE_GROUP = 136
-
-PAGE_HEIGHT = mm2dots(297)
-PAGE_WIDTH = mm2dots(210)
-
-
 @dataclasses.dataclass
 class Person:
+    background: str
+    backside: str
     name: str
     lastname: str = ""
     group: str = ""
     logo: str = ""
-
-    # NOTE: Adapt contants to the desired layout
-    def positions(self) -> tuple[int, int, int]:
-        name_y = mm2dots(66)
-        lastname_y = mm2dots(88)
-        group_y = mm2dots(105)
-        if not self.lastname:
-            group_y = mm2dots(100)
-
-        return name_y, lastname_y, group_y
 
 
 class ImageLoader:
@@ -83,69 +59,110 @@ class ImageLoader:
 loader = ImageLoader()
 
 
-def make_document(persons: list[Person], output: str, background: str) -> None:
-    pages = make_pages(persons, background)
+def make_document(config: Config, persons: list[Person], output: str) -> None:
+    pages = make_pages(config, persons)
 
     pages[0].save(output, save_all=True, append_images=pages[1:], dpi=(DPI, DPI))
 
 
-def make_pages(persons: Iterable[Person], background: str) -> list[Image.Image]:
+def make_pages(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
     pages = []
     it = peekable(iter(persons))
 
     while not it.empty():
-        pages.append(make_page(it, background))
+        pages.extend(make_page(config, it))
 
     return pages
 
 
-def make_page(persons: Iterable[Person], background: str) -> Image.Image:
-    page = Image.new("RGB", (PAGE_WIDTH, PAGE_HEIGHT), color=0xF0F0F0)
+def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
+    """Makes one page and its backpage."""
+    c = config  # 6 times shorter to type
+    frontpage = Image.new("RGB", c.page.size(), color=0xF0F0F0)
+    backpage = Image.new("RGB", c.page.size(), color=0xF0F0F0)
 
-    nb_badges_height = PAGE_HEIGHT // (BADGE_HEIGHT + INNER_MARGIN)
-    nb_badges_width = PAGE_WIDTH // (BADGE_WIDTH + INNER_MARGIN)
+    nb_badges_height = c.page.height // (c.badge.height + c.inner_margin)
+    nb_badges_width = c.page.width // (c.badge.width + c.inner_margin)
 
     margin_top = (
-        PAGE_HEIGHT
-        - nb_badges_height * BADGE_HEIGHT
-        - (nb_badges_height - 1) * INNER_MARGIN
+        c.page.height
+        - nb_badges_height * c.badge.height
+        - (nb_badges_height - 1) * c.inner_margin
     ) // 2
 
     margin_left = (
-        PAGE_WIDTH
-        - nb_badges_width * BADGE_WIDTH
-        - (nb_badges_width - 1) * INNER_MARGIN
+        c.page.width
+        - nb_badges_width * c.badge.width
+        - (nb_badges_width - 1) * c.inner_margin
     ) // 2
 
-    positions = itertools.product(range(nb_badges_height), range(nb_badges_width))
-
-    for pos, person in zip(positions, persons):
-        badge = make_badge(background, person)
-        pos = (
-            margin_left + pos[1] * (BADGE_WIDTH + INNER_MARGIN),
-            margin_top + pos[0] * (BADGE_HEIGHT + INNER_MARGIN),
+    def make_coord(pos: tuple[int, int]) -> tuple[int, int]:
+        return (
+            margin_left + pos[1] * (c.badge.width + c.inner_margin),
+            margin_top + pos[0] * (c.badge.height + c.inner_margin),
         )
-        page.paste(badge, pos)
 
-    return page
+    front_positions = [
+        make_coord(pos)
+        for pos in itertools.product(range(nb_badges_height), range(nb_badges_width))
+    ]
+    back_positions = [
+        make_coord(pos)
+        for pos in itertools.product(
+            range(nb_badges_height), reversed(range(nb_badges_width))
+        )
+    ]
+
+    for front_pos, back_pos, person in zip(front_positions, back_positions, persons):
+        badge = make_badge(config, person)
+        frontpage.paste(badge, front_pos)
+
+        backside = loader.get(person.backside)
+        backpage.paste(backside, back_pos)
+
+    return [frontpage, backpage]
 
 
-def make_badge(background: str, person: Person) -> Image.Image:
+def make_badge(config: Config, person: Person) -> Image.Image:
     print("Badge:", person, file=sys.stderr)
-    badge = loader.get(background)
-
-    name_y, lastname_y, group_y = person.positions()
+    c = config  # 6 times shorter to type
+    badge = loader.get(person.background)
 
     if person.logo:
-        logo = loader.get(person.logo, SIZE_GROUP, keep_ratio=True)
-        pos = round((badge.width - logo.width) / 2), group_y
+        logo = loader.get(person.logo, c.group.size(), keep_ratio=True)
+        pos = round((badge.width - logo.width) / 2), c.group.vertical_offset
         badge.paste(logo, pos, logo)
 
-    draw_text(badge, person.name, name_y, SIZE_NAME, FONT_SIZE_NAME, multiline=True)
+    draw_text(
+        badge,
+        person.name,
+        c.name.vertical_offset,
+        c.name.size(),
+        c.name.font_name,
+        c.name.font_size,
+        c.name.color_as_int(),
+        multiline=True,
+    )
     if person.lastname:
-        draw_text(badge, person.lastname, lastname_y, SIZE_LASTNAME, FONT_SIZE_LASTNAME)
+        draw_text(
+            badge,
+            person.lastname,
+            c.lastname.vertical_offset,
+            c.lastname.size(),
+            c.lastname.font_name,
+            c.lastname.font_size,
+            c.lastname.color_as_int(),
+        )
     if person.group and not person.logo:
-        draw_text(badge, person.group, group_y, SIZE_GROUP, FONT_SIZE_GROUP)
+        draw_text(
+            badge,
+            person.group,
+            c.group.vertical_offset,
+            c.group.size(),
+            c.group.font_name,
+            c.group.font_size,
+            c.group.color_as_int(),
+        )
 
     return badge
 
@@ -155,7 +172,9 @@ def draw_text(
     text: str,
     y: int,
     bbox: tuple[int, int],
+    fontname: str,
     fontsize: int = 18,
+    color: int = 0x000000,
     multiline=False,
 ) -> None:
     """Draw text on an image. The text is centered on the image and vertically offset of `y` dots.
@@ -169,9 +188,6 @@ def draw_text(
     :param multiline: try to split the text in multiple lines to fit bbox.
     """
     canvas = ImageDraw.Draw(img)
-
-    # TODO: softcode font
-    fontname = "DejaVuSans.ttf"
 
     while True:
         font = ImageFont.truetype(fontname, fontsize)
@@ -190,15 +206,11 @@ def draw_text(
 
     # `font` is at the right size
 
-    # TODO: softcode text color
-    white = 0xFFFFFF
-    black = 0x000000
-
     # Position text in the horizontal center of the image.
     # anchor is set to middle (horiz.) and top (vert.)
     # See https://pillow.readthedocs.io/en/stable/handbook/text-anchors.html
     pos = (img.width / 2, y)
-    canvas.multiline_text(pos, text, fill=black, font=font, anchor="ma", align="center")
+    canvas.multiline_text(pos, text, fill=color, font=font, anchor="ma", align="center")
 
 
 def wrap_text(font: ImageFont.FreeTypeFont, text: str, max_width: int) -> str:
@@ -236,12 +248,20 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "-c",
+        "--config",
+        type=argparse.FileType("rb"),
+        metavar="TOML",
+        required=True,
+        help="Config toml file. See README.md for format.",
+    )
+    parser.add_argument(
         "-i",
         "--input",
         type=argparse.FileType("r"),
         metavar="CSV",
         required=True,
-        help="input csv file",
+        help="Input csv file. See README.md for format.",
     )
     parser.add_argument(
         "-o",
@@ -251,10 +271,10 @@ if __name__ == "__main__":
         required=True,
         help="output pdf file",
     )
-    parser.add_argument(
-        "-b", "--background", required=True, help="background image for the badge"
-    )
 
     args = parser.parse_args()
 
-    make_document(parse_persons(args.input), args.output, args.background)
+    config = Config.from_toml(args.config)
+    make_document(config, parse_persons(args.input), args.output)
+
+    # TODO: recto-verso
