@@ -1,6 +1,8 @@
-dpi = 300  # unused
-# TODO: use dpi from config
+dpi = 300
 inner_margin = 1
+resize = false
+# double_sided: write text on both sides
+double_sided = true
 
 [page]
 height = 297
@@ -22,6 +24,9 @@ color = "0x000000"
 height = 21
 width = 93.6
 vertical_offset = 88
+# vertical_offset_if_null: if lastname is empty apply this offset to
+#   group.vertical_offset
+vertical_offset_if_null = -5
 font_name = "DejaVuSans.ttf"
 font_size = 172
 color = "0x000000"
@@ -30,7 +35,6 @@ color = "0x000000"
 height = 18
 width = 93.6
 vertical_offset = 105
-# TODO: add a logic that if there is no last name the vertical offset of group is a bit higher
 font_name = "DejaVuSans.ttf"
 font_size = 136
 color = "0x000000"

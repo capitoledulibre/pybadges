@@ -13,17 +13,9 @@ from config import Config
 from iterators import peekable
 
 
-DPI = 300
-
-
-def mm2dots(mm: float) -> int:
-    """Convert millimeters to dots."""
-    return round(mm / 25.4 * DPI)
-
-
 @dataclasses.dataclass
 class Person:
-    background: str
+    frontside: str
     backside: str
     name: str
     lastname: str = ""
@@ -62,7 +54,9 @@ loader = ImageLoader()
 def make_document(config: Config, persons: list[Person], output: str) -> None:
     pages = make_pages(config, persons)
 
-    pages[0].save(output, save_all=True, append_images=pages[1:], dpi=(DPI, DPI))
+    pages[0].save(
+        output, save_all=True, append_images=pages[1:], dpi=(config.dpi, config.dpi)
+    )
 
 
 def make_pages(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
@@ -114,24 +108,22 @@ def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
     ]
 
     for front_pos, back_pos, person in zip(front_positions, back_positions, persons):
-        badge = make_badge(config, person)
-        frontpage.paste(badge, front_pos)
-
-        backside = loader.get(person.backside)
-        backpage.paste(backside, back_pos)
+        frontpage.paste(make_badge(config, person), front_pos)
+        backpage.paste(make_badge(config, person, backside=True), back_pos)
 
     return [frontpage, backpage]
 
 
-def make_badge(config: Config, person: Person) -> Image.Image:
+def make_badge(config: Config, person: Person, backside: bool = False) -> Image.Image:
     print("Badge:", person, file=sys.stderr)
     c = config  # 6 times shorter to type
-    badge = loader.get(person.background)
 
-    if person.logo:
-        logo = loader.get(person.logo, c.group.size(), keep_ratio=True)
-        pos = round((badge.width - logo.width) / 2), c.group.vertical_offset
-        badge.paste(logo, pos, logo)
+    background = person.frontside if not backside else person.backside
+    resize = c.badge.size() if c.resize else None
+    badge = loader.get(background, resize)
+
+    if backside and not c.double_sided:
+        return badge
 
     draw_text(
         badge,
@@ -153,16 +145,25 @@ def make_badge(config: Config, person: Person) -> Image.Image:
             c.lastname.font_size,
             c.lastname.color_as_int(),
         )
-    if person.group and not person.logo:
-        draw_text(
-            badge,
-            person.group,
-            c.group.vertical_offset,
-            c.group.size(),
-            c.group.font_name,
-            c.group.font_size,
-            c.group.color_as_int(),
-        )
+    if person.group:
+        vertical_offset = c.group.vertical_offset
+        if not person.lastname:
+            vertical_offset += c.lastname.vertical_offset_if_null
+
+        if person.logo:
+            logo = loader.get(person.logo, c.group.size(), keep_ratio=True)
+            pos = round((badge.width - logo.width) / 2), vertical_offset
+            badge.paste(logo, pos, logo)
+        else:
+            draw_text(
+                badge,
+                person.group,
+                vertical_offset,
+                c.group.size(),
+                c.group.font_name,
+                c.group.font_size,
+                c.group.color_as_int(),
+            )
 
     return badge
 
@@ -273,8 +274,5 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
     config = Config.from_toml(args.config)
     make_document(config, parse_persons(args.input), args.output)
-
-    # TODO: recto-verso
