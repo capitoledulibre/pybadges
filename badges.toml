@@ -38,3 +38,8 @@ vertical_offset = 105
 font_name = "DejaVuSans.ttf"
 font_size = 136
 color = "0x000000"
+
+[logo]
+height = 18
+width = 93.6
+vertical_offset = 105

@@ -31,8 +31,19 @@ class Box:
 
 
 @dataclasses.dataclass
-class TextBox(Box):
+class DrawableBox(Box):
     vertical_offset: int
+
+    @classmethod
+    def from_dict(cls, dpi: int, dct: dict[str, t.Any]) -> t.Self:
+        dct["height"] = mm2dots(dpi, dct["height"])
+        dct["width"] = mm2dots(dpi, dct["width"])
+        dct["vertical_offset"] = mm2dots(dpi, dct["vertical_offset"])
+        return cls(**dct)
+
+
+@dataclasses.dataclass
+class TextBox(DrawableBox):
     font_name: str
     font_size: int
     color: str
@@ -64,6 +75,7 @@ class Config:
         name: TextBox,
         lastname: TextBox,
         group: TextBox,
+        logo: DrawableBox,
     ):
         self.dpi = dpi
         self.inner_margin = mm2dots(dpi, inner_margin)
@@ -75,6 +87,7 @@ class Config:
         self.name = name
         self.lastname = lastname
         self.group = group
+        self.logo = logo
 
     @classmethod
     def from_dict(cls, dct: dict[str, t.Any]) -> t.Self:
@@ -84,6 +97,7 @@ class Config:
         name = TextBox.from_dict(dpi, dct["name"])
         lastname = TextBox.from_dict(dpi, dct["lastname"])
         group = TextBox.from_dict(dpi, dct["group"])
+        logo = DrawableBox.from_dict(dpi, dct["logo"])
 
         return cls(
             dpi=dpi,
@@ -95,6 +109,7 @@ class Config:
             name=name,
             lastname=lastname,
             group=group,
+            logo=logo,
         )
 
     @classmethod
@@ -116,11 +131,12 @@ _schema = {
         "inner_margin": {"type": "number", "minimum": 0},
         "resize": {"type": "boolean"},
         "double_sided": {"type": "boolean"},
+        "page": {"$ref": "#/$defs/box"},
+        "badge": {"$ref": "#/$defs/box"},
         "name": {"$ref": "#/$defs/textbox"},
         "lastname": {"$ref": "#/$defs/textbox"},
         "group": {"$ref": "#/$defs/textbox"},
-        "page": {"$ref": "#/$defs/box"},
-        "badge": {"$ref": "#/$defs/box"},
+        "logo": {"$ref": "#/$defs/drawablebox"},
     },
     "$defs": {
         "box": {
@@ -130,6 +146,19 @@ _schema = {
                 "width": {"type": "number", "minimum": 0.1},
             },
             "required": ["height", "width"],
+        },
+        "drawablebox": {
+            "type": "object",
+            "properties": {
+                "height": {"type": "number", "minimum": 0.1},
+                "width": {"type": "number", "minimum": 0.1},
+                "vertical_offset": {"type": "number", "minimum": 0},
+            },
+            "required": [
+                "height",
+                "width",
+                "vertical_offset",
+            ],
         },
         "textbox": {
             "type": "object",
