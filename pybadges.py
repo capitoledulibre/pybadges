@@ -38,8 +38,8 @@ class ImageLoader:
         except KeyError:
             img = Image.open(filename).convert("RGBA")
             if size is not None:
-                width, height = size
                 if keep_ratio:
+                    width, height = size
                     ratio = min(width / img.width, height / img.height)
                     size = round(ratio * img.width), round(ratio * img.height)
                 img = img.resize(size)
@@ -70,7 +70,7 @@ def make_pages(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
 
 
 def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
-    """Makes one page and its backpage."""
+    """Make one page and its backpage."""
     c = config  # 6 times shorter to type
     nb_badges_height = c.page.height // (c.badge.height + c.inner_margin)
     nb_badges_width = c.page.width // (c.badge.width + c.inner_margin)
@@ -87,16 +87,19 @@ def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
         - (nb_badges_width - 1) * c.inner_margin
     ) // 2
 
-    def make_coord(pos: tuple[int, int]) -> tuple[int, int]:
+    def make_coord(column: int, row: int) -> tuple[int, int]:
         return (
-            margin_left + pos[1] * (c.badge.width + c.inner_margin),
-            margin_top + pos[0] * (c.badge.height + c.inner_margin),
+            margin_left + column * (c.badge.width + c.inner_margin),
+            margin_top + row * (c.badge.height + c.inner_margin),
         )
 
     frontpage = Image.new("RGB", c.page.size(), color=0xF0F0F0)
+    # We iterate in (row, col) because we want to fill rows first
     front_positions = [
-        make_coord(pos)
-        for pos in itertools.product(range(nb_badges_height), range(nb_badges_width))
+        make_coord(col, row)
+        for row, col in itertools.product(
+            range(nb_badges_height), range(nb_badges_width)
+        )
     ]
 
     if c.frontside_only:
@@ -108,8 +111,8 @@ def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
         backpage = Image.new("RGB", c.page.size(), color=0xF0F0F0)
 
         back_positions = [
-            make_coord(pos)
-            for pos in itertools.product(
+            make_coord(col, row)
+            for row, col in itertools.product(
                 range(nb_badges_height), reversed(range(nb_badges_width))
             )
         ]
