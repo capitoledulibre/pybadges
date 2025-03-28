@@ -2,6 +2,11 @@
 
 A tool to generates badges for conference attendees and speakers.
 
+Features:
+* Print front and back sides
+* Group badges per sheet (eg. four A6 badges on one A4 sheet)
+* Insert a company logo
+
 ## Installation
 
 ```sh
