@@ -27,4 +27,4 @@ poetry run python -m pybadges -c config.toml -i input.csv -o output.pdf
 
 ## License
 
-Licensed under the WTFPL license, http://sam.zoy.org/wtfpl/
+Licensed under the Apache-2.0 license, https://www.apache.org/licenses/LICENSE-2.0.html
