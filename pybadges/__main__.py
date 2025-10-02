@@ -43,7 +43,14 @@ parser.add_argument(
     required=True,
     help="output pdf file",
 )
+parser.add_argument(
+    "-q",
+    "--qrcode",
+    type=str,
+    required=True,
+    help="path (directory) where qrcode images are generated",
+)
 
 args = parser.parse_args()
 config = Config.from_toml(args.config)
-make_document(config, parse_persons(args.input), args.output)
+make_document(config, parse_persons(args.input), args.output, args.qrcode)
