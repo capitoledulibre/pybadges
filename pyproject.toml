@@ -6,10 +6,10 @@ authors = ["toulibre <contact@toulibre.org>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.9,<4.0"
 pillow = "^10.1.0"
 jsonschema = "^4.23.0"
-
+qrcode = "^8.2"
 
 [build-system]
 requires = ["poetry-core"]
