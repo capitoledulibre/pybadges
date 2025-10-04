@@ -17,6 +17,7 @@ import dataclasses
 import io
 import itertools
 import sys
+from pathlib import Path
 from typing import Iterable
 
 from PIL import Image
@@ -38,8 +39,9 @@ class Person:
 
 
 class ImageLoader:
-    def __init__(self) -> None:
+    def __init__(self, dir: Path) -> None:
         self._img = {}
+        self._dir = dir
 
     def get(
         self,
@@ -50,7 +52,7 @@ class ImageLoader:
         try:
             return self._img[filename].copy()
         except KeyError:
-            img = Image.open(filename).convert("RGBA")
+            img = Image.open(self._dir / filename).convert("RGBA")
             if size is not None:
                 if keep_ratio:
                     width, height = size
@@ -62,12 +64,10 @@ class ImageLoader:
             return img.copy()
 
 
-loader = ImageLoader()
-
-
 class Printer:
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, directory: Path):
         self.config = config
+        self.loader = ImageLoader(directory)
 
     def make_document(self, persons: list[Person], output: str) -> None:
         pages = self.make_pages(persons)
@@ -141,7 +141,7 @@ class Printer:
 
         background = person.frontside if not backside else person.backside
         resize = c.badge.size() if c.resize else None
-        badge = loader.get(background, resize)
+        badge = self.loader.get(background, resize)
 
         if backside and not c.text_on_both_sides:
             return badge
@@ -186,7 +186,7 @@ class Printer:
             if not person.lastname:
                 vertical_offset += c.lastname.vertical_offset_if_null
 
-            logo = loader.get(person.logo, c.logo.size(), keep_ratio=True)
+            logo = self.loader.get(person.logo, c.logo.size(), keep_ratio=True)
             pos = round((badge.width - logo.width) / 2), vertical_offset
             badge.paste(logo, pos, logo)
 

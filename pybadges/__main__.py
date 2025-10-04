@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import argparse
+import pathlib
 
 from pybadges import Config
 from pybadges import parse_persons
@@ -25,7 +26,15 @@ parser.add_argument(
     type=argparse.FileType("rb"),
     metavar="TOML",
     required=True,
-    help="Config toml file. See README.md for format.",
+    help="config toml file. See README.md for format",
+)
+parser.add_argument(
+    "-C",
+    "--directory",
+    type=pathlib.Path,
+    metavar="DIR",
+    default=pathlib.Path.cwd(),
+    help="directory to load images from",
 )
 parser.add_argument(
     "-i",
@@ -33,7 +42,7 @@ parser.add_argument(
     type=argparse.FileType("r"),
     metavar="CSV",
     required=True,
-    help="Input csv file. See README.md for format.",
+    help="input csv file. See README.md for format",
 )
 parser.add_argument(
     "-o",
@@ -46,4 +55,6 @@ parser.add_argument(
 
 args = parser.parse_args()
 config = Config.from_toml(args.config)
-Printer(config).make_document(parse_persons(args.input), args.output)
+printer = Printer(config, directory=args.directory)
+
+printer.make_document(parse_persons(args.input), args.output)
