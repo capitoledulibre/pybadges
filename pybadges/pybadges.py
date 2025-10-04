@@ -92,32 +92,14 @@ class Printer:
     def make_page(self, persons: Iterable[Person]) -> list[Image.Image]:
         """Make one page and its backpage."""
         c = self.config  # alias
-        nb_badges_height = (c.page.height + c.inner_margin) // (
-            c.badge.height + c.inner_margin
-        )
-        nb_badges_width = (c.page.width + c.inner_margin) // (
-            c.badge.width + c.inner_margin
-        )
 
-        if nb_badges_height == 0 or nb_badges_width == 0:
+        if c.nb_badges_height == 0 or c.nb_badges_width == 0:
             raise ValueError("Invalid config: cannot fit a single badge on a page.")
-
-        margin_top = (
-            c.page.height
-            - nb_badges_height * c.badge.height
-            - (nb_badges_height - 1) * c.inner_margin
-        ) // 2
-
-        margin_left = (
-            c.page.width
-            - nb_badges_width * c.badge.width
-            - (nb_badges_width - 1) * c.inner_margin
-        ) // 2
 
         def make_coord(column: int, row: int) -> tuple[int, int]:
             return (
-                margin_left + column * (c.badge.width + c.inner_margin),
-                margin_top + row * (c.badge.height + c.inner_margin),
+                c.margin_left + column * (c.badge.width + c.inner_margin),
+                c.margin_top + row * (c.badge.height + c.inner_margin),
             )
 
         frontpage = Image.new("RGBA", c.page.size(), color="#f0f0f0")
@@ -125,7 +107,7 @@ class Printer:
         front_positions = [
             make_coord(col, row)
             for row, col in itertools.product(
-                range(nb_badges_height), range(nb_badges_width)
+                range(c.nb_badges_height), range(c.nb_badges_width)
             )
         ]
 
@@ -140,7 +122,7 @@ class Printer:
             back_positions = [
                 make_coord(col, row)
                 for row, col in itertools.product(
-                    range(nb_badges_height), reversed(range(nb_badges_width))
+                    range(c.nb_badges_height), reversed(range(c.nb_badges_width))
                 )
             ]
 

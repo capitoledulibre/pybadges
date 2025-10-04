@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import dataclasses
+import functools
 import io
 import tomllib
 import typing as t
@@ -101,6 +102,34 @@ class Config:
         self.lastname = lastname
         self.group = group
         self.logo = logo
+
+    @functools.cached_property
+    def nb_badges_height(self) -> int:
+        return (self.page.height + self.inner_margin) // (
+            self.badge.height + self.inner_margin
+        )
+
+    @functools.cached_property
+    def nb_badges_width(self) -> int:
+        return (self.page.width + self.inner_margin) // (
+            self.badge.width + self.inner_margin
+        )
+
+    @functools.cached_property
+    def margin_top(self) -> int:
+        return (
+            self.page.height
+            - self.nb_badges_height * self.badge.height
+            - (self.nb_badges_height - 1) * self.inner_margin
+        ) // 2
+
+    @functools.cached_property
+    def margin_left(self) -> int:
+        return (
+            self.page.width
+            - self.nb_badges_width * self.badge.width
+            - (self.nb_badges_width - 1) * self.inner_margin
+        ) // 2
 
     @classmethod
     def from_dict(cls, dct: dict[str, t.Any]) -> t.Self:
