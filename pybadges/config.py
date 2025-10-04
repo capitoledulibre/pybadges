@@ -63,9 +63,6 @@ class TextBox(DrawableBox):
     color: str
     vertical_offset_if_null: int = 0
 
-    def color_as_int(self) -> int:
-        return int(self.color, base=0)
-
     @classmethod
     def from_dict(cls, dpi: int, dct: dict[str, t.Any]) -> t.Self:
         dct["height"] = mm2dots(dpi, dct["height"])
@@ -186,7 +183,7 @@ _schema = {
                 "vertical_offset": {"type": "number", "minimum": 0},
                 "font_name": {"type": "string"},
                 "font_size": {"type": "number", "minimum": 1},
-                "color": {"type": "string", "pattern": "^0x[0-9A-Fa-f]{6}$"},
+                "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
                 "vertical_offset_if_null": {"type": "number"},
             },
             "required": [

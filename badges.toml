@@ -22,7 +22,7 @@ width = 93.6
 vertical_offset = 66
 font_name = "DejaVuSans.ttf"
 font_size = 256
-color = "0x000000"
+color = "#000000"
 
 [lastname]
 height = 21
@@ -33,7 +33,7 @@ vertical_offset = 88
 vertical_offset_if_null = -5
 font_name = "DejaVuSans.ttf"
 font_size = 172
-color = "0x000000"
+color = "#000000"
 
 [group]
 height = 18
@@ -41,7 +41,7 @@ width = 93.6
 vertical_offset = 105
 font_name = "DejaVuSans.ttf"
 font_size = 136
-color = "0x000000"
+color = "#000000"
 
 [logo]
 height = 18
