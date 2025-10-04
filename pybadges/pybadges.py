@@ -65,146 +65,150 @@ class ImageLoader:
 loader = ImageLoader()
 
 
-def make_document(config: Config, persons: list[Person], output: str) -> None:
-    pages = make_pages(config, persons)
+class Printer:
+    def __init__(self, config: Config):
+        self.config = config
 
-    print(f"Writing PDF.")
-    pages[0].save(
-        output, save_all=True, append_images=pages[1:], dpi=(config.dpi, config.dpi)
-    )
+    def make_document(self, persons: list[Person], output: str) -> None:
+        pages = self.make_pages(persons)
 
-
-def make_pages(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
-    pages = []
-    it = peekable(iter(persons))
-
-    while not it.empty():
-        pages.extend(make_page(config, it))
-
-    return pages
-
-
-def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
-    """Make one page and its backpage."""
-    c = config  # alias
-    nb_badges_height = (c.page.height + c.inner_margin) // (
-        c.badge.height + c.inner_margin
-    )
-    nb_badges_width = (c.page.width + c.inner_margin) // (
-        c.badge.width + c.inner_margin
-    )
-
-    if nb_badges_height == 0 or nb_badges_width == 0:
-        raise ValueError("Invalid config: cannot fit a single badge on a page.")
-
-    margin_top = (
-        c.page.height
-        - nb_badges_height * c.badge.height
-        - (nb_badges_height - 1) * c.inner_margin
-    ) // 2
-
-    margin_left = (
-        c.page.width
-        - nb_badges_width * c.badge.width
-        - (nb_badges_width - 1) * c.inner_margin
-    ) // 2
-
-    def make_coord(column: int, row: int) -> tuple[int, int]:
-        return (
-            margin_left + column * (c.badge.width + c.inner_margin),
-            margin_top + row * (c.badge.height + c.inner_margin),
+        print(f"Writing PDF.")
+        pages[0].save(
+            output,
+            save_all=True,
+            append_images=pages[1:],
+            dpi=(self.config.dpi, self.config.dpi),
         )
 
-    frontpage = Image.new("RGBA", c.page.size(), color="#f0f0f0")
-    # We iterate in (row, col) because we want to fill rows first
-    front_positions = [
-        make_coord(col, row)
-        for row, col in itertools.product(
-            range(nb_badges_height), range(nb_badges_width)
+    def make_pages(self, persons: Iterable[Person]) -> list[Image.Image]:
+        pages = []
+        it = peekable(iter(persons))
+
+        while not it.empty():
+            pages.extend(self.make_page(it))
+
+        return pages
+
+    def make_page(self, persons: Iterable[Person]) -> list[Image.Image]:
+        """Make one page and its backpage."""
+        c = self.config  # alias
+        nb_badges_height = (c.page.height + c.inner_margin) // (
+            c.badge.height + c.inner_margin
         )
-    ]
+        nb_badges_width = (c.page.width + c.inner_margin) // (
+            c.badge.width + c.inner_margin
+        )
 
-    if c.frontside_only:
-        for front_pos, person in zip(front_positions, persons):
-            frontpage.paste(make_badge(config, person), front_pos)
-        return [frontpage]
+        if nb_badges_height == 0 or nb_badges_width == 0:
+            raise ValueError("Invalid config: cannot fit a single badge on a page.")
 
-    else:
-        backpage = Image.new("RGBA", c.page.size(), color="#f0f0f0")
+        margin_top = (
+            c.page.height
+            - nb_badges_height * c.badge.height
+            - (nb_badges_height - 1) * c.inner_margin
+        ) // 2
 
-        back_positions = [
+        margin_left = (
+            c.page.width
+            - nb_badges_width * c.badge.width
+            - (nb_badges_width - 1) * c.inner_margin
+        ) // 2
+
+        def make_coord(column: int, row: int) -> tuple[int, int]:
+            return (
+                margin_left + column * (c.badge.width + c.inner_margin),
+                margin_top + row * (c.badge.height + c.inner_margin),
+            )
+
+        frontpage = Image.new("RGBA", c.page.size(), color="#f0f0f0")
+        # We iterate in (row, col) because we want to fill rows first
+        front_positions = [
             make_coord(col, row)
             for row, col in itertools.product(
-                range(nb_badges_height), reversed(range(nb_badges_width))
+                range(nb_badges_height), range(nb_badges_width)
             )
         ]
 
-        for front_pos, back_pos, person in zip(
-            front_positions, back_positions, persons
-        ):
-            frontpage.paste(make_badge(config, person), front_pos)
-            if not c.frontside_only:
-                backpage.paste(make_badge(config, person, backside=True), back_pos)
+        if c.frontside_only:
+            for front_pos, person in zip(front_positions, persons):
+                frontpage.paste(self.make_badge(person), front_pos)
+            return [frontpage]
 
-        return [frontpage, backpage]
+        else:
+            backpage = Image.new("RGBA", c.page.size(), color="#f0f0f0")
 
+            back_positions = [
+                make_coord(col, row)
+                for row, col in itertools.product(
+                    range(nb_badges_height), reversed(range(nb_badges_width))
+                )
+            ]
 
-def make_badge(config: Config, person: Person, backside: bool = False) -> Image.Image:
-    print("Badge:", person, file=sys.stderr)
-    c = config  # 6 times shorter to type
+            for front_pos, back_pos, person in zip(
+                front_positions, back_positions, persons
+            ):
+                frontpage.paste(self.make_badge(person), front_pos)
+                if not c.frontside_only:
+                    backpage.paste(self.make_badge(person, backside=True), back_pos)
 
-    background = person.frontside if not backside else person.backside
-    resize = c.badge.size() if c.resize else None
-    badge = loader.get(background, resize)
+            return [frontpage, backpage]
 
-    if backside and not c.text_on_both_sides:
+    def make_badge(self, person: Person, backside: bool = False) -> Image.Image:
+        print("Badge:", person, file=sys.stderr)
+        c = self.config  # alias
+
+        background = person.frontside if not backside else person.backside
+        resize = c.badge.size() if c.resize else None
+        badge = loader.get(background, resize)
+
+        if backside and not c.text_on_both_sides:
+            return badge
+
+        draw_text(
+            badge,
+            person.name,
+            c.name.vertical_offset,
+            c.name.size(),
+            c.name.font_name,
+            c.name.font_size,
+            c.name.color,
+            multiline=True,
+        )
+        if person.lastname:
+            draw_text(
+                badge,
+                person.lastname,
+                c.lastname.vertical_offset,
+                c.lastname.size(),
+                c.lastname.font_name,
+                c.lastname.font_size,
+                c.lastname.color,
+            )
+        if person.group:
+            vertical_offset = c.group.vertical_offset
+            if not person.lastname:
+                vertical_offset += c.lastname.vertical_offset_if_null
+
+            draw_text(
+                badge,
+                person.group,
+                vertical_offset,
+                c.group.size(),
+                c.group.font_name,
+                c.group.font_size,
+                c.group.color,
+            )
+
+        if person.logo:
+            vertical_offset = c.logo.vertical_offset
+            if not person.lastname:
+                vertical_offset += c.lastname.vertical_offset_if_null
+
+            logo = loader.get(person.logo, c.logo.size(), keep_ratio=True)
+            pos = round((badge.width - logo.width) / 2), vertical_offset
+            badge.paste(logo, pos, logo)
+
         return badge
-
-    draw_text(
-        badge,
-        person.name,
-        c.name.vertical_offset,
-        c.name.size(),
-        c.name.font_name,
-        c.name.font_size,
-        c.name.color,
-        multiline=True,
-    )
-    if person.lastname:
-        draw_text(
-            badge,
-            person.lastname,
-            c.lastname.vertical_offset,
-            c.lastname.size(),
-            c.lastname.font_name,
-            c.lastname.font_size,
-            c.lastname.color,
-        )
-    if person.group:
-        vertical_offset = c.group.vertical_offset
-        if not person.lastname:
-            vertical_offset += c.lastname.vertical_offset_if_null
-
-        draw_text(
-            badge,
-            person.group,
-            vertical_offset,
-            c.group.size(),
-            c.group.font_name,
-            c.group.font_size,
-            c.group.color,
-        )
-
-    if person.logo:
-        vertical_offset = c.logo.vertical_offset
-        if not person.lastname:
-            vertical_offset += c.lastname.vertical_offset_if_null
-
-        logo = loader.get(person.logo, c.logo.size(), keep_ratio=True)
-        pos = round((badge.width - logo.width) / 2), vertical_offset
-        badge.paste(logo, pos, logo)
-
-    return badge
 
 
 def draw_text(

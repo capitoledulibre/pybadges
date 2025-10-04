@@ -15,8 +15,8 @@
 import argparse
 
 from pybadges import Config
-from pybadges import make_document
 from pybadges import parse_persons
+from pybadges import Printer
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -46,4 +46,4 @@ parser.add_argument(
 
 args = parser.parse_args()
 config = Config.from_toml(args.config)
-make_document(config, parse_persons(args.input), args.output)
+Printer(config).make_document(parse_persons(args.input), args.output)
