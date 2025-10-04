@@ -85,9 +85,16 @@ def make_pages(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
 
 def make_page(config: Config, persons: Iterable[Person]) -> list[Image.Image]:
     """Make one page and its backpage."""
-    c = config  # 6 times shorter to type
-    nb_badges_height = c.page.height // (c.badge.height + c.inner_margin)
-    nb_badges_width = c.page.width // (c.badge.width + c.inner_margin)
+    c = config  # alias
+    nb_badges_height = (c.page.height + c.inner_margin) // (
+        c.badge.height + c.inner_margin
+    )
+    nb_badges_width = (c.page.width + c.inner_margin) // (
+        c.badge.width + c.inner_margin
+    )
+
+    if nb_badges_height == 0 or nb_badges_width == 0:
+        raise ValueError("Invalid config: cannot fit a single badge on a page.")
 
     margin_top = (
         c.page.height
