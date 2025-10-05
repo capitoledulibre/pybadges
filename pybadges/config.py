@@ -104,6 +104,9 @@ class Config:
         self.group = group
         self.logo = logo
 
+        if self.nb_badges_page == 0:
+            raise ConfigError("Invalid config: cannot fit a single badge on a page.")
+
     @functools.cached_property
     def nb_badges_height(self) -> int:
         return (self.page.height + self.inner_margin) // (
@@ -115,6 +118,10 @@ class Config:
         return (self.page.width + self.inner_margin) // (
             self.badge.width + self.inner_margin
         )
+
+    @functools.cached_property
+    def nb_badges_page(self) -> int:
+        return self.nb_badges_height * self.nb_badges_width
 
     @functools.cached_property
     def margin_top(self) -> int:

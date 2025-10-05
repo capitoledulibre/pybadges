@@ -16,6 +16,7 @@ import csv
 import dataclasses
 import functools
 import io
+import itertools
 import sys
 from pathlib import Path
 from typing import Iterable
@@ -52,7 +53,7 @@ class ImageLoader:
         try:
             return self._img[filename].copy()
         except KeyError:
-            img = Image.open(self._dir / filename).convert("RGBA")
+            img = Image.open(self._dir / filename)
             if size is not None:
                 if keep_ratio:
                     width, height = size
@@ -93,28 +94,24 @@ class Printer:
         """Make one page and its backpage."""
         c = self.config  # alias
 
-        if c.nb_badges_height == 0 or c.nb_badges_width == 0:
-            raise ValueError("Invalid config: cannot fit a single badge on a page.")
-
-        frontpage = Image.new("RGBA", c.page.size(), color="#f0f0f0")
-        # We iterate in (row, col) because we want to fill rows first
-
+        persons = list(itertools.islice(persons, c.nb_badges_page))
+        frontpage = self.print_page(persons)
         if c.frontside_only:
-            for front_pos, person in zip(self.front_positions(), persons):
-                frontpage.paste(self.make_badge(person), front_pos)
             return [frontpage]
-
         else:
-            backpage = Image.new("RGBA", c.page.size(), color="#f0f0f0")
-
-            for front_pos, back_pos, person in zip(
-                self.front_positions(), self.back_positions(), persons
-            ):
-                frontpage.paste(self.make_badge(person), front_pos)
-                if not c.frontside_only:
-                    backpage.paste(self.make_badge(person, backside=True), back_pos)
-
+            backpage = self.print_page(persons, backside=True)
             return [frontpage, backpage]
+
+    def print_page(self, persons: list[Person], backside=False) -> Image.Image:
+        c = self.config  # alias
+
+        badges = [self.make_badge(person, backside) for person in persons]
+        mode = "RGBA" if any(badge.has_transparency_data for badge in badges) else "RGB"
+        page = Image.new(mode, c.page.size(), color="#f0f0f0")
+        positions = self.back_positions if backside else self.front_positions
+        for badge, pos in zip(badges, positions):
+            page.paste(badge, pos)
+        return page
 
     def make_badge(self, person: Person, backside: bool = False) -> Image.Image:
         print("Badge:", person, file=sys.stderr)
@@ -173,11 +170,11 @@ class Printer:
 
         return badge
 
-    @functools.cache
+    @functools.cached_property
     def front_positions(self) -> list[tuple[int, int]]:
         return sorted(self.config.page_positions)
 
-    @functools.cache
+    @functools.cached_property
     def back_positions(self) -> list[tuple[int, int]]:
         # reverse row order
         return sorted(self.config.page_positions, key=lambda t: (-t[0], t[1]))

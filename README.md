@@ -30,6 +30,10 @@ Typical usage:
 poetry run python -m pybadges -c config.toml -i input.csv -o output.pdf
 ```
 
+### Note
+Removing the transparency channel from the badge backgrounds if you don't need it can
+increase performances by many folds.
+
 ## License
 
 Licensed under the Apache-2.0 license, https://www.apache.org/licenses/LICENSE-2.0.html
