@@ -14,8 +14,8 @@
 #
 import csv
 import dataclasses
+import functools
 import io
-import itertools
 import sys
 from pathlib import Path
 from typing import Iterable
@@ -96,38 +96,19 @@ class Printer:
         if c.nb_badges_height == 0 or c.nb_badges_width == 0:
             raise ValueError("Invalid config: cannot fit a single badge on a page.")
 
-        def make_coord(column: int, row: int) -> tuple[int, int]:
-            return (
-                c.margin_left + column * (c.badge.width + c.inner_margin),
-                c.margin_top + row * (c.badge.height + c.inner_margin),
-            )
-
         frontpage = Image.new("RGBA", c.page.size(), color="#f0f0f0")
         # We iterate in (row, col) because we want to fill rows first
-        front_positions = [
-            make_coord(col, row)
-            for row, col in itertools.product(
-                range(c.nb_badges_height), range(c.nb_badges_width)
-            )
-        ]
 
         if c.frontside_only:
-            for front_pos, person in zip(front_positions, persons):
+            for front_pos, person in zip(self.front_positions(), persons):
                 frontpage.paste(self.make_badge(person), front_pos)
             return [frontpage]
 
         else:
             backpage = Image.new("RGBA", c.page.size(), color="#f0f0f0")
 
-            back_positions = [
-                make_coord(col, row)
-                for row, col in itertools.product(
-                    range(c.nb_badges_height), reversed(range(c.nb_badges_width))
-                )
-            ]
-
             for front_pos, back_pos, person in zip(
-                front_positions, back_positions, persons
+                self.front_positions(), self.back_positions(), persons
             ):
                 frontpage.paste(self.make_badge(person), front_pos)
                 if not c.frontside_only:
@@ -191,6 +172,15 @@ class Printer:
             badge.paste(logo, pos, logo)
 
         return badge
+
+    @functools.cache
+    def front_positions(self) -> list[tuple[int, int]]:
+        return sorted(self.config.page_positions)
+
+    @functools.cache
+    def back_positions(self) -> list[tuple[int, int]]:
+        # reverse row order
+        return sorted(self.config.page_positions, key=lambda t: (-t[0], t[1]))
 
 
 def draw_text(

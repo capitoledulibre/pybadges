@@ -15,6 +15,7 @@
 import dataclasses
 import functools
 import io
+import itertools
 import tomllib
 import typing as t
 
@@ -130,6 +131,21 @@ class Config:
             - self.nb_badges_width * self.badge.width
             - (self.nb_badges_width - 1) * self.inner_margin
         ) // 2
+
+    def make_coord(self, column: int, row: int) -> tuple[int, int]:
+        return (
+            self.margin_left + column * (self.badge.width + self.inner_margin),
+            self.margin_top + row * (self.badge.height + self.inner_margin),
+        )
+
+    @functools.cached_property
+    def page_positions(self) -> list[tuple[int, int]]:
+        return [
+            self.make_coord(col, row)
+            for row, col in itertools.product(
+                range(self.nb_badges_height), range(self.nb_badges_width)
+            )
+        ]
 
     @classmethod
     def from_dict(cls, dct: dict[str, t.Any]) -> t.Self:
