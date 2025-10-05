@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 import argparse
+import logging.config
 import pathlib
 
 from pybadges import Config
@@ -52,8 +53,50 @@ parser.add_argument(
     required=True,
     help="output pdf file",
 )
+parser.add_argument(
+    "-v",
+    "--verbose",
+    action="count",
+)
 
 args = parser.parse_args()
+
+level = "WARNING"
+if args.verbose == 1:
+    level = "INFO"
+elif args.verbose > 1:
+    level = "DEBUG"
+
+logging.config.dictConfig(
+    {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "simple": {
+                "format": "[%(levelname)8s] %(message)s",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "DEBUG",
+                "formatter": "simple",
+            },
+        },
+        "loggers": {
+            "pybadges": {
+                "level": level,
+                "handlers": ["console"],
+                "propagate": False,
+            },
+            "root": {
+                "level": "WARNING",
+                "handlers": ["console"],
+            },
+        },
+    }
+)
+
 config = Config.from_toml(args.config)
 printer = Printer(config, directory=args.directory)
 

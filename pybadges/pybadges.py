@@ -17,7 +17,7 @@ import dataclasses
 import functools
 import io
 import itertools
-import sys
+import logging
 from pathlib import Path
 from typing import Iterable
 
@@ -25,6 +25,7 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 
+from .timer import Timer
 from pybadges.config import Config
 from pybadges.iterators import peekable
 
@@ -66,20 +67,31 @@ class ImageLoader:
 
 
 class Printer:
-    def __init__(self, config: Config, directory: Path):
+    def __init__(
+        self,
+        config: Config,
+        directory: Path,
+        logger: logging.Logger = logging.getLogger(__name__),
+    ):
         self.config = config
         self.loader = ImageLoader(directory)
+        self.log = logger
 
-    def make_document(self, persons: list[Person], output: str) -> None:
-        pages = self.make_pages(persons)
+    def make_document(self, persons: list[Person], output: io.BytesIO) -> None:
+        timer = Timer()
+        with timer:
+            pages = self.make_pages(persons)
 
-        print(f"Writing PDF.")
-        pages[0].save(
-            output,
-            save_all=True,
-            append_images=pages[1:],
-            dpi=(self.config.dpi, self.config.dpi),
-        )
+            self.log.info("Writing PDF.")
+            pages[0].save(
+                output,
+                save_all=True,
+                append_images=pages[1:],
+                dpi=(self.config.dpi, self.config.dpi),
+            )
+        dt = timer.in_seconds()
+
+        self.log.info(f"Created %s in %.1fs.", output.name, dt)
 
     def make_pages(self, persons: Iterable[Person]) -> list[Image.Image]:
         pages = []
@@ -107,6 +119,7 @@ class Printer:
 
         badges = [self.make_badge(person, backside) for person in persons]
         mode = "RGBA" if any(badge.has_transparency_data for badge in badges) else "RGB"
+        self.log.debug("Page mode: %s", mode)
         page = Image.new(mode, c.page.size(), color="#f0f0f0")
         positions = self.back_positions if backside else self.front_positions
         for badge, pos in zip(badges, positions):
@@ -114,7 +127,13 @@ class Printer:
         return page
 
     def make_badge(self, person: Person, backside: bool = False) -> Image.Image:
-        print("Badge:", person, file=sys.stderr)
+        if not backside:
+            self.log.info("Make badge for %s %s.", person.name, person.lastname)
+        else:
+            self.log.info(
+                "Make badge for %s %s [backside].", person.name, person.lastname
+            )
+        self.log.debug("Person: %r", person)
         c = self.config  # alias
 
         background = person.frontside if not backside else person.backside
