@@ -13,10 +13,12 @@
 # limitations under the License.
 #
 import argparse
+import logging.config
+import pathlib
 
 from pybadges import Config
-from pybadges import make_document
-from pybadges import parse_persons
+from pybadges import Person
+from pybadges import Printer
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -25,7 +27,15 @@ parser.add_argument(
     type=argparse.FileType("rb"),
     metavar="TOML",
     required=True,
-    help="Config toml file. See README.md for format.",
+    help="config toml file. See README.md for format",
+)
+parser.add_argument(
+    "-C",
+    "--directory",
+    type=pathlib.Path,
+    metavar="DIR",
+    default=pathlib.Path.cwd(),
+    help="directory to load images from",
 )
 parser.add_argument(
     "-i",
@@ -33,7 +43,7 @@ parser.add_argument(
     type=argparse.FileType("r"),
     metavar="CSV",
     required=True,
-    help="Input csv file. See README.md for format.",
+    help="input csv file. See README.md for format",
 )
 parser.add_argument(
     "-o",
@@ -43,7 +53,51 @@ parser.add_argument(
     required=True,
     help="output pdf file",
 )
+parser.add_argument(
+    "-v",
+    "--verbose",
+    action="count",
+)
 
 args = parser.parse_args()
+
+level = "WARNING"
+if args.verbose == 1:
+    level = "INFO"
+elif args.verbose > 1:
+    level = "DEBUG"
+
+logging.config.dictConfig(
+    {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "simple": {
+                "format": "[%(levelname)8s] %(message)s",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "DEBUG",
+                "formatter": "simple",
+            },
+        },
+        "loggers": {
+            "pybadges": {
+                "level": level,
+                "handlers": ["console"],
+                "propagate": False,
+            },
+            "root": {
+                "level": "WARNING",
+                "handlers": ["console"],
+            },
+        },
+    }
+)
+
 config = Config.from_toml(args.config)
-make_document(config, parse_persons(args.input), args.output)
+printer = Printer(config, directory=args.directory)
+
+printer.make_document(Person.many_from_csv(args.input), args.output)

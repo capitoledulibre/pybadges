@@ -13,7 +13,9 @@
 # limitations under the License.
 #
 import dataclasses
+import functools
 import io
+import itertools
 import tomllib
 import typing as t
 
@@ -101,6 +103,56 @@ class Config:
         self.lastname = lastname
         self.group = group
         self.logo = logo
+
+        if self.nb_badges_page == 0:
+            raise ConfigError("Invalid config: cannot fit a single badge on a page.")
+
+    @functools.cached_property
+    def nb_badges_height(self) -> int:
+        return (self.page.height + self.inner_margin) // (
+            self.badge.height + self.inner_margin
+        )
+
+    @functools.cached_property
+    def nb_badges_width(self) -> int:
+        return (self.page.width + self.inner_margin) // (
+            self.badge.width + self.inner_margin
+        )
+
+    @functools.cached_property
+    def nb_badges_page(self) -> int:
+        return self.nb_badges_height * self.nb_badges_width
+
+    @functools.cached_property
+    def margin_top(self) -> int:
+        return (
+            self.page.height
+            - self.nb_badges_height * self.badge.height
+            - (self.nb_badges_height - 1) * self.inner_margin
+        ) // 2
+
+    @functools.cached_property
+    def margin_left(self) -> int:
+        return (
+            self.page.width
+            - self.nb_badges_width * self.badge.width
+            - (self.nb_badges_width - 1) * self.inner_margin
+        ) // 2
+
+    def make_coord(self, column: int, row: int) -> tuple[int, int]:
+        return (
+            self.margin_left + column * (self.badge.width + self.inner_margin),
+            self.margin_top + row * (self.badge.height + self.inner_margin),
+        )
+
+    @functools.cached_property
+    def page_positions(self) -> list[tuple[int, int]]:
+        return [
+            self.make_coord(col, row)
+            for row, col in itertools.product(
+                range(self.nb_badges_height), range(self.nb_badges_width)
+            )
+        ]
 
     @classmethod
     def from_dict(cls, dct: dict[str, t.Any]) -> t.Self:
