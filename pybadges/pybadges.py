@@ -39,6 +39,14 @@ class Person:
     group: str = ""
     logo: str = ""
 
+    @staticmethod
+    def many_from_csv(ifd: io.StringIO) -> list["Person"]:
+        persons = []
+        for row in csv.reader(ifd, skipinitialspace=True):
+            persons.append(Person(*row))
+
+        return persons
+
 
 class ImageLoader:
     def __init__(self, dir: Path) -> None:
@@ -266,11 +274,3 @@ def wrap_text(font: ImageFont.FreeTypeFont, text: str, max_width: int) -> str:
     lines.append(line)
 
     return "\n".join(lines)
-
-
-def parse_persons(ifd: io.StringIO) -> list[Person]:
-    persons = []
-    for row in csv.reader(ifd, skipinitialspace=True):
-        persons.append(Person(*row))
-
-    return persons

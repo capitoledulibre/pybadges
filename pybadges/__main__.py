@@ -17,7 +17,7 @@ import logging.config
 import pathlib
 
 from pybadges import Config
-from pybadges import parse_persons
+from pybadges import Person
 from pybadges import Printer
 
 parser = argparse.ArgumentParser()
@@ -100,4 +100,4 @@ logging.config.dictConfig(
 config = Config.from_toml(args.config)
 printer = Printer(config, directory=args.directory)
 
-printer.make_document(parse_persons(args.input), args.output)
+printer.make_document(Person.many_from_csv(args.input), args.output)
