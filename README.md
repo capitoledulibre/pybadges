@@ -10,7 +10,7 @@ Features:
 ## Installation
 
 ```sh
-poetry install
+uv sync
 ```
 
 ## Usage
@@ -27,12 +27,12 @@ on each badge. The images are resized if required.
 
 Typical usage:
 ```sh
-poetry run python -m pybadges -c config.toml -i input.csv -o output.pdf
+uv run python -m pybadges -c config.toml -i input.csv -o output.pdf
 ```
 
 For example the following command creates a series of test badges.
 ```sh
-poetry run python -m pybadges -c badges.toml -i examples/attendees.csv -o output.pdf -C examples -v
+uv run python -m pybadges -c badges.toml -i examples/attendees.csv -o output.pdf -C examples -v
 ```
 
 ### Note
