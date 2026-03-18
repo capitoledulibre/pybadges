@@ -39,6 +39,15 @@ uv run python -m pybadges -c badges.toml -i examples/attendees.csv -o output.pdf
 Removing the transparency channel from the badge backgrounds if you don't need it can
 increase performances by many folds.
 
+## They use pybadges
+
+| Conference | |
+|---|---|
+| [Capitole du Libre](https://capitoledulibre.org) | ![Capitole du Libre](examples/capitole-du-libre-logo.png) |
+| [DevFest Toulouse](https://devfesttoulouse.fr) | ![DevFest Toulouse](examples/devfest-toulouse-logo.png) |
+| [Cloud Toulouse](https://cloudtoulouse.com/) | ![Cloud Toulouse](examples/cloud-toulouse-logo.png) |
+| [Pycon FR 2017](https://www.pycon.fr/2017/) | ![Pycon FR 2017](examples/pyconfr-2027-logo.png) |
+
 ## License
 
 Licensed under the Apache-2.0 license, https://www.apache.org/licenses/LICENSE-2.0.html
