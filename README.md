@@ -43,10 +43,10 @@ increase performances by many folds.
 
 | Conference | |
 |---|---|
-| [Capitole du Libre](https://capitoledulibre.org) | ![Capitole du Libre](examples/capitole-du-libre-logo.png) |
-| [DevFest Toulouse](https://devfesttoulouse.fr) | ![DevFest Toulouse](examples/devfest-toulouse-logo.png) |
-| [Cloud Toulouse](https://cloudtoulouse.com/) | ![Cloud Toulouse](examples/cloud-toulouse-logo.png) |
-| [Pycon FR 2017](https://www.pycon.fr/2017/) | ![Pycon FR 2017](examples/pyconfr-2027-logo.png) |
+| [Capitole du Libre](https://capitoledulibre.org) | <img src="examples/capitole-du-libre-logo.png" alt="Capitole du Libre" height="64"> |
+| [DevFest Toulouse](https://devfesttoulouse.fr) | <img src="examples/devfest-toulouse-logo.png" alt="DevFest Toulouse" height="64"> |
+| [Cloud Toulouse](https://cloudtoulouse.com/) | <img src="examples/cloud-toulouse-logo.png" alt="Cloud Toulouse" height="64"> |
+| [Pycon FR 2017](https://www.pycon.fr/2017/) | <img src="examples/pyconfr-2027-logo.png" alt="Pycon FR 2017" height="64"> |
 
 ## License
 
