@@ -42,7 +42,7 @@ increase performances by many folds.
 ## They use pybadges
 
 | Conference | |
-|---|---|
+|---|:--:|
 | [Capitole du Libre](https://capitoledulibre.org) | <img src="examples/capitole-du-libre-logo.png" alt="Capitole du Libre" height="64"> |
 | [DevFest Toulouse](https://devfesttoulouse.fr) | <img src="examples/devfest-toulouse-logo.png" alt="DevFest Toulouse" height="64"> |
 | [Cloud Toulouse](https://cloudtoulouse.com/) | <img src="examples/cloud-toulouse-logo.png" alt="Cloud Toulouse" height="64"> |
